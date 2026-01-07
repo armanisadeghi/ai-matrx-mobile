@@ -27,11 +27,12 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 export default function LoginScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'dark'];
-  const { signIn } = useAuth();
+  const { signIn, signInWithOAuth } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isOAuthLoading, setIsOAuthLoading] = useState<'google' | 'github' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleLogin = async () => {
@@ -55,6 +56,25 @@ export default function LoginScreen() {
     }
 
     setIsLoading(false);
+  };
+
+  const handleOAuthLogin = async (provider: 'google' | 'github') => {
+    setIsOAuthLoading(provider);
+    setError(null);
+
+    const { error: authError } = await signInWithOAuth(provider);
+
+    if (authError) {
+      if (authError.code !== 'CANCELLED') {
+        setError(authError.message);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
+    } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.replace('/(tabs)');
+    }
+
+    setIsOAuthLoading(null);
   };
 
   return (
@@ -127,6 +147,48 @@ export default function LoginScreen() {
               isLoading={isLoading}
               style={styles.button}
             />
+
+            {/* Divider */}
+            <View style={styles.divider}>
+              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+              <Text style={[styles.dividerText, { color: colors.textTertiary }]}>
+                or continue with
+              </Text>
+              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+            </View>
+
+            {/* OAuth Buttons */}
+            <View style={styles.oauthButtons}>
+              <TouchableOpacity
+                style={[styles.oauthButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                onPress={() => handleOAuthLogin('google')}
+                disabled={isOAuthLoading !== null}
+              >
+                {isOAuthLoading === 'google' ? (
+                  <Ionicons name="reload" size={20} color={colors.text} />
+                ) : (
+                  <>
+                    <Ionicons name="logo-google" size={20} color={colors.text} />
+                    <Text style={[styles.oauthButtonText, { color: colors.text }]}>Google</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.oauthButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                onPress={() => handleOAuthLogin('github')}
+                disabled={isOAuthLoading !== null}
+              >
+                {isOAuthLoading === 'github' ? (
+                  <Ionicons name="reload" size={20} color={colors.text} />
+                ) : (
+                  <>
+                    <Ionicons name="logo-github" size={20} color={colors.text} />
+                    <Text style={[styles.oauthButtonText, { color: colors.text }]}>GitHub</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Footer */}
@@ -204,6 +266,36 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: Layout.spacing.md,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: Layout.spacing.xl,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    ...Typography.caption1,
+    marginHorizontal: Layout.spacing.md,
+  },
+  oauthButtons: {
+    flexDirection: 'row',
+    gap: Layout.spacing.md,
+  },
+  oauthButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Layout.spacing.md,
+    borderRadius: Layout.radius.md,
+    borderWidth: 1,
+    gap: Layout.spacing.sm,
+  },
+  oauthButtonText: {
+    ...Typography.headline,
   },
   footer: {
     flexDirection: 'row',

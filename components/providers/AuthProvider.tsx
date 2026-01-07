@@ -5,14 +5,20 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { Session, User } from '@supabase/supabase-js';
+import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
 import { supabase } from '@/lib/supabase';
 import { 
   AuthContextValue, 
   AuthState, 
   LoginCredentials, 
   RegisterCredentials, 
-  AuthError 
+  AuthError,
+  OAuthProvider 
 } from '@/types/auth';
+
+// Required for OAuth to work properly
+WebBrowser.maybeCompleteAuthSession();
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -177,10 +183,88 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
+  // Sign in with OAuth (Google, GitHub)
+  const signInWithOAuth = useCallback(async (provider: OAuthProvider): Promise<{ error: AuthError | null }> => {
+    try {
+      // Create the redirect URL for the OAuth flow
+      const redirectUrl = AuthSession.makeRedirectUri({
+        scheme: 'aimatrx',
+        path: 'auth/callback',
+      });
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: true,
+        },
+      });
+
+      if (error) {
+        return { 
+          error: { 
+            message: error.message, 
+            code: error.code 
+          } 
+        };
+      }
+
+      if (data?.url) {
+        // Open the OAuth URL in the browser
+        const result = await WebBrowser.openAuthSessionAsync(
+          data.url,
+          redirectUrl
+        );
+
+        if (result.type === 'success' && result.url) {
+          // Extract the tokens from the URL
+          const url = new URL(result.url);
+          const params = new URLSearchParams(url.hash.substring(1));
+          const accessToken = params.get('access_token');
+          const refreshToken = params.get('refresh_token');
+
+          if (accessToken && refreshToken) {
+            // Set the session with the tokens
+            const { error: sessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+
+            if (sessionError) {
+              return { 
+                error: { 
+                  message: sessionError.message, 
+                  code: sessionError.code 
+                } 
+              };
+            }
+          }
+        } else if (result.type === 'cancel') {
+          return { 
+            error: { 
+              message: 'Authentication was cancelled', 
+              code: 'CANCELLED' 
+            } 
+          };
+        }
+      }
+
+      return { error: null };
+    } catch (err) {
+      return { 
+        error: { 
+          message: 'An unexpected error occurred during OAuth',
+          code: 'UNKNOWN'
+        } 
+      };
+    }
+  }, []);
+
   const value: AuthContextValue = {
     ...state,
     signIn,
     signUp,
+    signInWithOAuth,
     signOut,
     resetPassword,
     updatePassword,

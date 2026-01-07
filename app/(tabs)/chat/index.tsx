@@ -95,7 +95,9 @@ export default function AgentSelectionScreen() {
   const handleAgentSelect = (agent: Agent) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     AppStorage.setString(StorageKeys.LAST_AGENT_ID, agent.id);
-    router.push(`/(tabs)/chat/${agent.id}`);
+    // TODO: Navigate to chat screen with agent - for now just save selection
+    // router.push({ pathname: '/(tabs)/chat/[agentId]', params: { agentId: agent.id } });
+    console.log('Selected agent:', agent.id);
   };
 
   const getAgentIcon = (agentId: string): keyof typeof Ionicons.glyphMap => {

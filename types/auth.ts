@@ -4,6 +4,8 @@
 
 import { Session, User } from '@supabase/supabase-js';
 
+export type OAuthProvider = 'google' | 'github';
+
 export interface AuthState {
   user: User | null;
   session: Session | null;
@@ -30,6 +32,7 @@ export interface AuthError {
 export interface AuthContextValue extends AuthState {
   signIn: (credentials: LoginCredentials) => Promise<{ error: AuthError | null }>;
   signUp: (credentials: RegisterCredentials) => Promise<{ error: AuthError | null }>;
+  signInWithOAuth: (provider: OAuthProvider) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
   updatePassword: (newPassword: string) => Promise<{ error: AuthError | null }>;
