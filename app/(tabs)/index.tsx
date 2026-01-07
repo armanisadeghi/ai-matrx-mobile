@@ -1,98 +1,257 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+/**
+ * AI Matrx Mobile - Home Screen
+ * Dashboard with quick actions and recent activity
+ */
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { Card } from '@/components/ui';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { Colors } from '@/constants/colors';
+import { Typography } from '@/constants/typography';
+import { Layout } from '@/constants/layout';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+
+interface QuickAction {
+  id: string;
+  title: string;
+  description: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  onPress: () => void;
+}
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'dark'];
+  const { user } = useAuth();
+  const [refreshing, setRefreshing] = React.useState(false);
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    // TODO: Fetch latest data
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    setRefreshing(false);
+  }, []);
+
+  const quickActions: QuickAction[] = [
+    {
+      id: 'new-chat',
+      title: 'New Chat',
+      description: 'Start a conversation with an AI agent',
+      icon: 'chatbubble-ellipses-outline',
+      onPress: () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        router.push('/(tabs)/chat');
+      },
+    },
+    {
+      id: 'agents',
+      title: 'Browse Agents',
+      description: 'Explore available AI agents',
+      icon: 'people-outline',
+      onPress: () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        router.push('/(tabs)/chat');
+      },
+    },
+  ];
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const getUserName = () => {
+    if (user?.user_metadata?.full_name) {
+      return user.user_metadata.full_name.split(' ')[0];
+    }
+    return 'there';
+  };
+
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={[styles.greeting, { color: colors.textSecondary }]}>
+              {getGreeting()}
+            </Text>
+            <Text style={[styles.userName, { color: colors.text }]}>
+              {getUserName()}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.profileButton, { backgroundColor: colors.surface }]}
+            onPress={() => router.push('/(tabs)/settings')}
+          >
+            <Ionicons name="person" size={24} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Quick Actions
+          </Text>
+          <View style={styles.actionsGrid}>
+            {quickActions.map((action) => (
+              <Card
+                key={action.id}
+                variant="elevated"
+                onPress={action.onPress}
+                style={styles.actionCard}
+              >
+                <View style={[styles.actionIcon, { backgroundColor: colors.primary + '20' }]}>
+                  <Ionicons name={action.icon} size={24} color={colors.primary} />
+                </View>
+                <Text style={[styles.actionTitle, { color: colors.text }]}>
+                  {action.title}
+                </Text>
+                <Text style={[styles.actionDescription, { color: colors.textSecondary }]}>
+                  {action.description}
+                </Text>
+              </Card>
+            ))}
+          </View>
+        </View>
+
+        {/* Recent Conversations */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Recent Conversations
+            </Text>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/chat')}>
+              <Text style={[styles.seeAll, { color: colors.primary }]}>
+                See All
+              </Text>
+            </TouchableOpacity>
+          </View>
+          
+          {/* Empty state */}
+          <Card variant="default" style={styles.emptyCard}>
+            <View style={styles.emptyState}>
+              <Ionicons name="chatbubbles-outline" size={48} color={colors.textTertiary} />
+              <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>
+                No conversations yet
+              </Text>
+              <Text style={[styles.emptyDescription, { color: colors.textTertiary }]}>
+                Start chatting with an AI agent to see your conversations here
+              </Text>
+            </View>
+          </Card>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: Layout.spacing.lg,
+    paddingBottom: Layout.spacing.xl,
+  },
+  header: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
+    paddingTop: Layout.spacing.lg,
+    paddingBottom: Layout.spacing.xl,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  greeting: {
+    ...Typography.subhead,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  userName: {
+    ...Typography.largeTitle,
+  },
+  profileButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  section: {
+    marginBottom: Layout.spacing.xl,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Layout.spacing.md,
+  },
+  sectionTitle: {
+    ...Typography.title2,
+    marginBottom: Layout.spacing.md,
+  },
+  seeAll: {
+    ...Typography.subhead,
+    fontWeight: '500',
+  },
+  actionsGrid: {
+    flexDirection: 'row',
+    gap: Layout.spacing.md,
+  },
+  actionCard: {
+    flex: 1,
+  },
+  actionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Layout.spacing.md,
+  },
+  actionTitle: {
+    ...Typography.headline,
+    marginBottom: Layout.spacing.xs,
+  },
+  actionDescription: {
+    ...Typography.caption1,
+  },
+  emptyCard: {
+    marginTop: -Layout.spacing.sm,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: Layout.spacing.xl,
+  },
+  emptyTitle: {
+    ...Typography.headline,
+    marginTop: Layout.spacing.md,
+  },
+  emptyDescription: {
+    ...Typography.subhead,
+    textAlign: 'center',
+    marginTop: Layout.spacing.xs,
+    paddingHorizontal: Layout.spacing.lg,
   },
 });
