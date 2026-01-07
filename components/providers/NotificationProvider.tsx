@@ -3,11 +3,11 @@
  * Handles push notifications setup and listeners
  */
 
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
-import { Platform } from 'react-native';
 import { AppStorage, StorageKeys } from '@/lib/storage';
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 
 // Configure notification behavior
 Notifications.setNotificationHandler({

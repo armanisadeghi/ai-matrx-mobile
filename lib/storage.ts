@@ -1,73 +1,50 @@
 /**
  * AI Matrx Mobile - Storage Utilities
- * Uses AsyncStorage for non-sensitive data (MMKV requires native build)
+ * High-performance storage using MMKV for non-sensitive data
  * SecureStore for sensitive data
  */
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createMMKV, type MMKV } from 'react-native-mmkv';
 import * as SecureStore from 'expo-secure-store';
 
-// Storage cache for synchronous-like access pattern
-const cache: Map<string, string> = new Map();
-
-/**
- * Initialize storage cache from AsyncStorage
- * Call this early in app lifecycle
- */
-export async function initializeStorage(): Promise<void> {
-  try {
-    const keys = await AsyncStorage.getAllKeys();
-    const pairs = await AsyncStorage.multiGet(keys);
-    pairs.forEach(([key, value]) => {
-      if (value !== null) {
-        cache.set(key, value);
-      }
-    });
-  } catch (error) {
-    console.error('Failed to initialize storage cache:', error);
-  }
-}
+// Initialize MMKV instance for fast local storage
+// MMKV is 30x faster than AsyncStorage with synchronous API
+export const storage: MMKV = createMMKV({
+  id: 'ai-matrx-storage',
+});
 
 /**
  * Generic storage wrapper for non-sensitive data
- * Uses AsyncStorage with in-memory cache for sync-like access
+ * Uses MMKV for high performance (30x faster than AsyncStorage)
  */
 export const AppStorage = {
-  // String operations (sync from cache, async update)
+  // String operations
   getString: (key: string): string | undefined => {
-    return cache.get(key);
+    return storage.getString(key);
   },
   setString: (key: string, value: string): void => {
-    cache.set(key, value);
-    AsyncStorage.setItem(key, value).catch(console.error);
+    storage.set(key, value);
   },
 
   // Number operations
   getNumber: (key: string): number | undefined => {
-    const value = cache.get(key);
-    return value ? parseFloat(value) : undefined;
+    return storage.getNumber(key);
   },
   setNumber: (key: string, value: number): void => {
-    const strValue = value.toString();
-    cache.set(key, strValue);
-    AsyncStorage.setItem(key, strValue).catch(console.error);
+    storage.set(key, value);
   },
 
   // Boolean operations
   getBoolean: (key: string): boolean | undefined => {
-    const value = cache.get(key);
-    if (value === undefined) return undefined;
-    return value === 'true';
+    return storage.getBoolean(key);
   },
   setBoolean: (key: string, value: boolean): void => {
-    const strValue = value.toString();
-    cache.set(key, strValue);
-    AsyncStorage.setItem(key, strValue).catch(console.error);
+    storage.set(key, value);
   },
 
   // JSON operations
   getJSON: <T>(key: string): T | null => {
-    const value = cache.get(key);
+    const value = storage.getString(key);
     if (!value) return null;
     try {
       return JSON.parse(value) as T;
@@ -76,29 +53,25 @@ export const AppStorage = {
     }
   },
   setJSON: <T>(key: string, value: T): void => {
-    const strValue = JSON.stringify(value);
-    cache.set(key, strValue);
-    AsyncStorage.setItem(key, strValue).catch(console.error);
+    storage.set(key, JSON.stringify(value));
   },
 
   // Delete operations
   delete: (key: string): void => {
-    cache.delete(key);
-    AsyncStorage.removeItem(key).catch(console.error);
+    storage.remove(key);
   },
   clearAll: (): void => {
-    cache.clear();
-    AsyncStorage.clear().catch(console.error);
+    storage.clearAll();
   },
 
   // Check if key exists
   contains: (key: string): boolean => {
-    return cache.has(key);
+    return storage.contains(key);
   },
 
   // Get all keys
   getAllKeys: (): string[] => {
-    return Array.from(cache.keys());
+    return storage.getAllKeys();
   },
 };
 
