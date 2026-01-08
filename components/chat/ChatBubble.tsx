@@ -32,11 +32,6 @@ export const ChatBubble = React.memo(function ChatBubble({ message, isStreaming 
     ? { color: colors.messageTextUser }
     : { color: colors.messageTextAgent };
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
   return (
     <View style={[styles.container, isUser ? styles.userContainer : styles.agentContainer]}>
       <View style={[styles.bubble, bubbleStyle, isUser ? styles.userBubble : styles.agentBubble]}>
@@ -59,10 +54,6 @@ export const ChatBubble = React.memo(function ChatBubble({ message, isStreaming 
           content={message.content}
         />
       )}
-
-      <Text style={[styles.timestamp, { color: colors.textTertiary }]}>
-        {formatTime(message.createdAt)}
-      </Text>
     </View>
   );
 });
@@ -92,11 +83,6 @@ const styles = StyleSheet.create({
   },
   messageText: {
     ...Typography.body,
-  },
-  timestamp: {
-    ...Typography.caption2,
-    marginTop: Layout.spacing.xs,
-    marginHorizontal: Layout.spacing.xs,
   },
   cursor: {
     opacity: 0.7,

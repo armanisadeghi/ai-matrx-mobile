@@ -40,7 +40,7 @@ export const Colors = {
     
     // Chat specific
     messageBubbleUser: '#0A84FF',
-    messageBubbleAgent: '#E9E9EB',
+    messageBubbleAgent: 'transparent',
     messageTextUser: '#FFFFFF',
     messageTextAgent: '#000000',
   },
@@ -80,7 +80,7 @@ export const Colors = {
     
     // Chat specific
     messageBubbleUser: '#0A84FF',
-    messageBubbleAgent: '#2C2C2E',
+    messageBubbleAgent: 'transparent',
     messageTextUser: '#FFFFFF',
     messageTextAgent: '#FFFFFF',
   },

@@ -50,7 +50,6 @@ export const TypingIndicator = React.memo(function TypingIndicator({
         styles.container,
         {
           opacity: fadeAnim,
-          backgroundColor: colors.messageBubbleAgent,
         },
       ]}
     >

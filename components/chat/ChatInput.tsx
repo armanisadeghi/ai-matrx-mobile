@@ -44,7 +44,7 @@ export function ChatInput({
   onSend,
   onAttachment,
   isSending = false,
-  placeholder = 'Ask Gemini',
+  placeholder = 'Ask Matrx',
   selectedAgent = { id: 'default', name: 'Fast' },
   onAgentSelect,
   onModeSelect,
@@ -229,6 +229,8 @@ const styles = StyleSheet.create({
     maxHeight: Layout.chat.inputMaxHeight,
     paddingTop: Platform.OS === 'ios' ? 8 : 4,
     paddingBottom: Platform.OS === 'ios' ? 8 : 4,
+    borderWidth: 0,
+    outlineWidth: 0,
   },
   actionsRow: {
     flexDirection: 'row',

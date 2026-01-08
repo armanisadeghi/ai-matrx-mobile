@@ -43,14 +43,30 @@ export function MessageList({
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
 
-  // Smart auto-scroll: scroll to bottom when new messages arrive, but respect user scroll position
+  // Aggressive auto-scroll: Scroll to bottom when new messages arrive
   useEffect(() => {
-    if (messages.length > 0 && !isUserScrolling) {
+    if (messages.length > 0) {
+      // Always scroll to bottom, large padding ensures proper positioning
       setTimeout(() => {
         flashListRef.current?.scrollToEnd({ animated: true });
       }, 100);
+      // Reset user scrolling state when new messages arrive
+      setIsUserScrolling(false);
     }
-  }, [messages.length, messages[messages.length - 1]?.content, isUserScrolling]);
+  }, [messages.length]);
+
+  // Continue scrolling during streaming to follow the response
+  useEffect(() => {
+    if (isTyping && messages.length > 0 && !isUserScrolling) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage?.content) {
+        // During streaming, keep scrolling to end to show growing content
+        setTimeout(() => {
+          flashListRef.current?.scrollToEnd({ animated: false });
+        }, 50);
+      }
+    }
+  }, [messages[messages.length - 1]?.content, isTyping, isUserScrolling]);
 
   // Handle scroll events to detect user scrolling
   const handleScroll = (event: any) => {
@@ -85,13 +101,18 @@ export function MessageList({
   );
 
   const renderFooter = () => {
-    if (!isLoadingMore) return null;
+    // Show typing indicator or loading footer
     return (
-      <View style={styles.loadingFooter}>
-        <Text style={[styles.loadingText, { color: colors.textTertiary }]}>
-          Loading more...
-        </Text>
-      </View>
+      <>
+        {isTyping && <TypingIndicator visible={isTyping} statusMessage={statusMessage} />}
+        {isLoadingMore && (
+          <View style={styles.loadingFooter}>
+            <Text style={[styles.loadingText, { color: colors.textTertiary }]}>
+              Loading more...
+            </Text>
+          </View>
+        )}
+      </>
     );
   };
 
@@ -114,7 +135,6 @@ export function MessageList({
         onScroll={handleScroll}
         scrollEventThrottle={16}
       />
-      <TypingIndicator visible={isTyping} statusMessage={statusMessage} />
       
       {/* Scroll to bottom button */}
       {showScrollToBottom && (
@@ -138,8 +158,8 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: Layout.spacing.lg,
     paddingTop: Layout.spacing.md,
-    // Extra padding at bottom for input
-    paddingBottom: 120,
+    // Extra padding at bottom to allow scrolling assistant response to top
+    paddingBottom: 400,
   },
   emptyListContent: {
     flex: 1,

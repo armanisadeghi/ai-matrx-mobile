@@ -14,10 +14,15 @@ export default function DrawerIndex() {
   const colors = Colors[colorScheme ?? 'dark'];
 
   useEffect(() => {
-    // TODO: Check for recent conversations and redirect to latest
-    // For now, create a new chat
-    const newChatId = Date.now().toString();
-    router.replace(`/(drawer)/chat/${newChatId}` as any);
+    // Delay navigation to ensure the navigation tree is mounted
+    const timer = setTimeout(() => {
+      // TODO: Check for recent conversations and redirect to latest
+      // For now, create a new chat
+      const newChatId = Date.now().toString();
+      router.replace(`/(drawer)/chat/${newChatId}` as any);
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, []);
 
   return (

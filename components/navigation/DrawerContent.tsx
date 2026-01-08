@@ -43,7 +43,7 @@ export function DrawerContent(props: DrawerContentComponentProps) {
   // Mock conversation data
   const recentConversations = [
     { id: '1', title: 'NYC: The Musical Capital', lastMessage: 'Tell me about...', timestamp: '2h ago' },
-    { id: '2', title: 'AI Assistant Offers Help', lastMessage: 'Hello! I\'m Gemini...', timestamp: '5h ago' },
+    { id: '2', title: 'AI Assistant Offers Help', lastMessage: 'Hello! I\'m AI Matrx...', timestamp: '5h ago' },
     { id: '3', title: 'Teen Trivia Questions and Answers', lastMessage: 'Can you help...', timestamp: '1d ago' },
   ];
 
@@ -73,10 +73,10 @@ export function DrawerContent(props: DrawerContentComponentProps) {
       </TouchableOpacity>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Gems Section */}
+        {/* Agents Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Gems</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Agents</Text>
             <TouchableOpacity>
               <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
