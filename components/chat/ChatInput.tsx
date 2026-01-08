@@ -98,7 +98,13 @@ export function ChatInput({
   return (
     <KeyboardStickyView offset={{ closed: 0, opened: insets.bottom }}>
       <BlurView intensity={80} tint={colorScheme ?? 'dark'} style={styles.blurContainer}>
-        <View style={[styles.container, { borderTopColor: colors.border }]}>
+        <View style={[
+          styles.container, 
+          { 
+            borderTopColor: colors.border,
+            paddingBottom: Math.max(insets.bottom, Platform.OS === 'ios' ? 8 : 16)
+          }
+        ]}>
           {/* Input placeholder with icon */}
           <View style={styles.inputRow}>
             <View style={styles.placeholderRow}>
@@ -204,7 +210,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   container: {
-    paddingBottom: Platform.OS === 'ios' ? 8 : 16,
     paddingTop: Layout.spacing.md,
     paddingHorizontal: Layout.spacing.lg,
   },

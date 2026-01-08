@@ -3,12 +3,25 @@
  * FastAPI client with streaming support for chat
  */
 
-import { getAccessToken } from './supabase';
-import { ApiResponse, ApiError, ApiRequestConfig, FastAPIErrorResponse } from '@/types/api';
+import { ApiError, ApiRequestConfig, ApiResponse, FastAPIErrorResponse } from '@/types/api';
 import { ChatStreamEvent } from '@/types/chat';
+import { Platform } from 'react-native';
+import { getAccessToken } from './supabase';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL!;
 const DEFAULT_TIMEOUT = 30000; // 30 seconds
+
+// Development debugging for API connection
+if (__DEV__) {
+  console.log('[API Client] API_BASE_URL:', API_BASE_URL);
+  if (Platform.OS === 'ios' && API_BASE_URL?.includes('localhost')) {
+    console.warn(
+      '⚠️ iOS Simulator detected with localhost URL.\n' +
+      'iOS Simulator cannot connect to localhost.\n' +
+      'Use your machine\'s IP address instead (e.g., http://192.168.1.x:8000)'
+    );
+  }
+}
 
 /**
  * Parse FastAPI error response

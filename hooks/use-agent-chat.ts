@@ -224,13 +224,15 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error('[useAgentChat] Error during message send:', errorMessage);
+        console.error('[useAgentChat] Error details:', error);
         setState((prev) => ({
           ...prev,
           messages: prev.messages.map((msg) =>
             msg.id === assistantMessage.id
               ? {
                   ...msg,
-                  content: 'Failed to get response. Please try again.',
+                  content: 'Failed to receive response. Please try again.',
                   status: 'error' as const,
                 }
               : msg

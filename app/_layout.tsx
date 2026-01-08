@@ -11,6 +11,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import 'react-native-reanimated';
 
 import { AuthProvider, useAuth } from '@/components/providers/AuthProvider';
@@ -99,10 +100,12 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <NotificationProvider>
-        <RootLayoutNav />
-      </NotificationProvider>
-    </AuthProvider>
+    <KeyboardProvider>
+      <AuthProvider>
+        <NotificationProvider>
+          <RootLayoutNav />
+        </NotificationProvider>
+      </AuthProvider>
+    </KeyboardProvider>
   );
 }

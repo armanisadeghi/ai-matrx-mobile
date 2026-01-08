@@ -9,10 +9,23 @@ import {
   AgentWarmRequest,
   AgentWarmResponse,
 } from '@/types/agent';
+import { Platform } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { getAccessToken } from './supabase';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL!;
+
+// Development debugging for API connection
+if (__DEV__) {
+  console.log('[Agent Service] API_BASE_URL:', API_BASE_URL);
+  if (Platform.OS === 'ios' && API_BASE_URL?.includes('localhost')) {
+    console.warn(
+      '⚠️ iOS Simulator detected with localhost URL.\n' +
+      'iOS Simulator cannot connect to localhost.\n' +
+      'Use your machine\'s IP address instead (e.g., http://192.168.1.x:8000)'
+    );
+  }
+}
 
 /**
  * Get authorization headers for authenticated requests
@@ -20,7 +33,13 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL!;
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const token = await getAccessToken();
   if (!token) {
+    if (__DEV__) {
+      console.error('[Agent Service] No authentication token available. User may not be signed in.');
+    }
     throw new Error('No authentication token available');
+  }
+  if (__DEV__) {
+    console.log('[Agent Service] Auth token available ✓');
   }
   return {
     'Content-Type': 'application/json',
@@ -53,10 +72,17 @@ export async function warmAgent(request: AgentWarmRequest): Promise<AgentWarmRes
 
     return await response.json();
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Network error';
+    if (__DEV__) {
+      console.error('[Agent Service] warmAgent error:', errorMessage);
+      if (Platform.OS === 'ios' && API_BASE_URL?.includes('localhost')) {
+        console.warn('💡 Tip: Change EXPO_PUBLIC_API_BASE_URL from localhost to your machine\'s IP address');
+      }
+    }
     return {
       status: 'error',
       prompt_id: request.prompt_id,
-      message: error instanceof Error ? error.message : 'Network error',
+      message: errorMessage,
     };
   }
 }
@@ -69,20 +95,68 @@ export async function* executeAgent(
   request: AgentExecuteRequest,
   signal?: AbortSignal
 ): AsyncGenerator<AgentStreamEvent> {
-  const headers = await getAuthHeaders();
+  let headers: Record<string, string>;
+  let response: Response;
 
-  const response = await fetch(`${API_BASE_URL}/api/agent/execute`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      ...request,
-      stream: true,
-    }),
-    signal,
-  });
+  try {
+    headers = await getAuthHeaders();
+  } catch (error) {
+    yield {
+      event: 'error',
+      data: {
+        type: 'auth_error',
+        message: error instanceof Error ? error.message : 'Authentication failed',
+        user_visible_message: 'Authentication failed. Please sign in again.',
+      },
+    };
+    return;
+  }
+
+  if (__DEV__) {
+    console.log('[Agent Service] Executing agent request to:', `${API_BASE_URL}/api/agent/execute`);
+    console.log('[Agent Service] Request payload:', JSON.stringify({...request, stream: true}, null, 2));
+  }
+
+  try {
+    response = await fetch(`${API_BASE_URL}/api/agent/execute`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        ...request,
+        stream: true,
+      }),
+      signal,
+    });
+    
+    if (__DEV__) {
+      console.log('[Agent Service] Response status:', response.status, response.statusText);
+    }
+  } catch (error) {
+    // Network error (e.g., can't reach server)
+    if (__DEV__) {
+      console.error('[Agent Service] Network error:', error);
+    }
+    yield {
+      event: 'error',
+      data: {
+        type: 'network_error',
+        message: error instanceof Error ? error.message : 'Network error',
+        user_visible_message: 
+          'Failed to connect to the server. Please check your network connection.\n' +
+          (Platform.OS === 'ios' && API_BASE_URL?.includes('localhost')
+            ? 'Note: iOS Simulator cannot connect to localhost. Use your machine\'s IP address.'
+            : ''),
+      },
+    };
+    return;
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
+    if (__DEV__) {
+      console.error('[Agent Service] HTTP error response:', error);
+      console.error('[Agent Service] Status:', response.status, response.statusText);
+    }
     yield {
       event: 'error',
       data: {
