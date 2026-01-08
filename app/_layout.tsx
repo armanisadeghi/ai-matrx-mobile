@@ -3,6 +3,9 @@
  * App entry point with providers and auth state management
  */
 
+// IMPORTANT: Must be imported before any other imports to polyfill crypto
+import 'react-native-get-random-values';
+
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';

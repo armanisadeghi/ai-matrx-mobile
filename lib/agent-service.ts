@@ -4,11 +4,12 @@
  */
 
 import {
-    AgentExecuteRequest,
-    AgentStreamEvent,
-    AgentWarmRequest,
-    AgentWarmResponse,
+  AgentExecuteRequest,
+  AgentStreamEvent,
+  AgentWarmRequest,
+  AgentWarmResponse,
 } from '@/types/agent';
+import { v4 as uuidv4 } from 'uuid';
 import { getAccessToken } from './supabase';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL!;
@@ -168,7 +169,7 @@ export async function* executeAgent(
  * Helper to generate a new conversation ID
  */
 export function generateConversationId(): string {
-  return crypto.randomUUID();
+  return uuidv4();
 }
 
 /**
