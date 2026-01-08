@@ -3,17 +3,17 @@
  * App entry point with providers and auth state management
  */
 
-import { useEffect } from 'react';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, useRouter, useSegments } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider, useAuth } from '@/components/providers/AuthProvider';
 import { NotificationProvider } from '@/components/providers/NotificationProvider';
 import { Colors } from '@/constants/colors';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -36,7 +36,7 @@ function RootLayoutNav() {
 
     if (isAuthenticated && inAuthGroup) {
       // User is signed in but on auth screen, redirect to main app
-      router.replace('/(tabs)');
+      router.replace('/(drawer)' as any);
     } else if (!isAuthenticated && !inAuthGroup) {
       // User is not signed in but trying to access protected route
       router.replace('/(auth)/login');
@@ -78,7 +78,8 @@ function RootLayoutNav() {
     <ThemeProvider value={colorScheme === 'dark' ? customDarkTheme : customLightTheme}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="(drawer)" />
+        <Stack.Screen name="(tabs)" options={{ href: null } as any} />
         <Stack.Screen 
           name="modal" 
           options={{ 

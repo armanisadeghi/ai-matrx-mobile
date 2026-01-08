@@ -37,41 +37,22 @@ export const MarkdownText = React.memo(
             ...Typography.body,
             color: textColor,
           },
-          heading1: {
-            ...Typography.largeTitle,
-            color: textColor,
-            marginBottom: 8,
-          },
-          heading2: {
-            ...Typography.title1,
-            color: textColor,
-            marginBottom: 6,
-          },
-          heading3: {
-            ...Typography.title2,
-            color: textColor,
-            marginBottom: 4,
-          },
           paragraph: {
-            ...Typography.body,
-            color: textColor,
             marginBottom: 8,
           },
-          code_inline: {
+          codespan: {
             fontFamily: 'monospace',
             backgroundColor: colors.surface,
             paddingHorizontal: 4,
             paddingVertical: 2,
             borderRadius: 4,
-            color: colors.primary,
           },
-          code_block: {
+          code: {
             fontFamily: 'monospace',
             backgroundColor: colors.surface,
             padding: 12,
             borderRadius: 8,
             marginVertical: 8,
-            color: textColor,
           },
           blockquote: {
             borderLeftColor: colors.primary,
@@ -107,7 +88,7 @@ export const MarkdownText = React.memo(
             fontStyle: 'italic',
             color: textColor,
           },
-        }}
+        } as any}
       />
     );
   },

@@ -11,6 +11,7 @@ import { Message } from '@/types/chat';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { MarkdownText } from './MarkdownText';
+import { MessageActions } from './MessageActions';
 
 interface ChatBubbleProps {
   message: Message;
@@ -50,6 +51,15 @@ export const ChatBubble = React.memo(function ChatBubble({ message, isStreaming 
           </View>
         )}
       </View>
+      
+      {/* Show actions for AI messages only, not during streaming */}
+      {!isUser && !isStreaming && (
+        <MessageActions
+          messageId={message.id}
+          content={message.content}
+        />
+      )}
+
       <Text style={[styles.timestamp, { color: colors.textTertiary }]}>
         {formatTime(message.createdAt)}
       </Text>
