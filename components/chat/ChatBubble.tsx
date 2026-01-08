@@ -62,6 +62,7 @@ const styles = StyleSheet.create({
   container: {
     marginVertical: Layout.spacing.xs,
     maxWidth: Layout.chat.messageMaxWidth,
+    width: '100%',
   },
   userContainer: {
     alignSelf: 'flex-end',
@@ -74,6 +75,7 @@ const styles = StyleSheet.create({
   bubble: {
     padding: Layout.chat.messagePadding,
     borderRadius: Layout.chat.messageRadius,
+    maxWidth: '100%',
   },
   userBubble: {
     borderBottomRightRadius: 4,

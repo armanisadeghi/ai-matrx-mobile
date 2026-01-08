@@ -4,18 +4,19 @@
  */
 
 import {
-    buildContentArray,
-    executeAgent,
-    generateConversationId,
-    warmAgent,
+  buildContentArray,
+  executeAgent,
+  generateConversationId,
+  warmAgent,
 } from '@/lib/agent-service';
 import {
-    AgentConfigOverrides,
-    AgentOption,
-    ChatMessage,
-    ChatState
+  AgentConfigOverrides,
+  AgentOption,
+  ChatMessage,
+  ChatState
 } from '@/types/agent';
 import { useCallback, useRef, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 
 interface UseAgentChatOptions {
   initialAgent?: AgentOption;
@@ -104,7 +105,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
 
       // Create user message
       const userMessage: ChatMessage = {
-        id: crypto.randomUUID(),
+        id: uuidv4(),
         role: 'user',
         content: text,
         timestamp: new Date(),
@@ -117,7 +118,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
 
       // Create placeholder assistant message
       const assistantMessage: ChatMessage = {
-        id: crypto.randomUUID(),
+        id: uuidv4(),
         role: 'assistant',
         content: '',
         timestamp: new Date(),

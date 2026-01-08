@@ -7,6 +7,7 @@ import { Colors } from '@/constants/colors';
 import { Layout } from '@/constants/layout';
 import { Typography } from '@/constants/typography';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { AgentOption } from '@/types/agent';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
@@ -23,17 +24,12 @@ import {
 import { KeyboardStickyView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-interface Agent {
-  id: string;
-  name: string;
-}
-
 interface ChatInputProps {
   onSend: (message: string) => void;
   onAttachment?: (uri: string) => void;
   isSending?: boolean;
   placeholder?: string;
-  selectedAgent?: Agent;
+  selectedAgent?: AgentOption;
   onAgentSelect?: () => void;
   onModeSelect?: () => void;
   onAttachFile?: () => void;
@@ -45,7 +41,7 @@ export function ChatInput({
   onAttachment,
   isSending = false,
   placeholder = 'Ask Matrx',
-  selectedAgent = { id: 'default', name: 'Fast' },
+  selectedAgent,
   onAgentSelect,
   onModeSelect,
   onAttachFile,
@@ -154,7 +150,7 @@ export function ChatInput({
               accessibilityRole="button"
             >
               <Ionicons name="flash" size={16} color={colors.textSecondary} style={{ marginRight: 4 }} />
-              <Text style={[styles.agentText, { color: colors.text }]}>{selectedAgent.name}</Text>
+              <Text style={[styles.agentText, { color: colors.text }]}>{selectedAgent?.name || 'Select Agent'}</Text>
             </TouchableOpacity>
 
             {/* Spacer */}

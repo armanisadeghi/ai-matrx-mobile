@@ -203,7 +203,7 @@ export interface AgentWarmRequest {
    * AUTHENTICATED USER FLOW
    *
    * ```typescript
-   * const conversationId = crypto.randomUUID();
+   * const conversationId = uuidv4();
    *
    * // Execute with JWT token
    * const response = await fetch("/api/agent/execute", {
@@ -237,7 +237,7 @@ export interface AgentWarmRequest {
    *   },
    *   body: JSON.stringify({
    *     prompt_id: "35461e07-bbd1-46cc-81a7-910850815703",
-   *     conversation_id: crypto.randomUUID(),
+   *     conversation_id: uuidv4(),
    *     user_input: "Hello!",
    *   }),
    * });

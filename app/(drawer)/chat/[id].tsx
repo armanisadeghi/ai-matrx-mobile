@@ -8,25 +8,24 @@ import { ChatHeader } from '@/components/chat/ChatHeader';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { MessageList } from '@/components/chat/MessageList';
 import { ModeBottomSheet } from '@/components/chat/ModeBottomSheet';
+import { DEFAULT_AGENTS } from '@/constants/agents';
 import { Colors } from '@/constants/colors';
 import { useAgentChat } from '@/hooks/use-agent-chat';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { generateConversationTitle, saveMessage, updateConversation } from '@/lib/conversations';
+import { AgentOption } from '@/types/agent';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Default agent ID for testing
-const DEFAULT_AGENT_ID = '35d8f884-5178-4c3e-858d-c5b7adfa186a';
-
 export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'dark'];
 
-  // Initialize agent chat
+  // Initialize agent chat with first default agent
   const {
     messages,
     currentAgent,
@@ -37,18 +36,10 @@ export default function ChatScreen() {
     setAgent,
     newConversation,
   } = useAgentChat({
-    initialAgent: {
-      id: DEFAULT_AGENT_ID,
-      name: 'Fast',
-      promptId: DEFAULT_AGENT_ID,
-      variables: [],
-    },
+    initialAgent: DEFAULT_AGENTS[0],
   });
 
-  const [selectedAgent, setSelectedAgent] = useState({
-    id: DEFAULT_AGENT_ID,
-    name: 'Fast',
-  });
+  const [selectedAgent, setSelectedAgent] = useState<AgentOption>(DEFAULT_AGENTS[0]);
   const [selectedMode, setSelectedMode] = useState({ id: 'chat', name: 'Chat' });
   const [showAgentSheet, setShowAgentSheet] = useState(false);
   const [showModeSheet, setShowModeSheet] = useState(false);
@@ -92,15 +83,10 @@ export default function ChatScreen() {
     [sendMessage]
   );
 
-  const handleAgentSelect = useCallback((agent: any) => {
+  const handleAgentSelect = useCallback((agent: AgentOption) => {
     setSelectedAgent(agent);
     setShowAgentSheet(false);
-    setAgent({
-      id: agent.id,
-      name: agent.name,
-      promptId: agent.id,
-      variables: [],
-    });
+    setAgent(agent);
   }, [setAgent]);
 
   const handleModeSelect = useCallback((mode: any) => {
@@ -119,9 +105,14 @@ export default function ChatScreen() {
   }, []);
 
   const handleNewChat = useCallback(() => {
+    // Clear current conversation state
+    newConversation();
+    setConversationTitle('New Chat');
+    
+    // Navigate to new chat with new ID
     const newChatId = Date.now().toString();
     router.push(`/(drawer)/chat/${newChatId}` as any);
-  }, []);
+  }, [newConversation]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

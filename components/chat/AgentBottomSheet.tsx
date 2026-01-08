@@ -6,29 +6,25 @@
 import { Colors } from '@/constants/colors';
 import { Layout } from '@/constants/layout';
 import { Typography } from '@/constants/typography';
+import { useAgents } from '@/hooks/use-agents';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { AgentOption } from '@/types/agent';
 import { Ionicons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetFlatList, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import * as Haptics from 'expo-haptics';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-
-interface Agent {
-  id: string;
-  name: string;
-  description: string;
-  icon?: string;
-}
 
 interface AgentBottomSheetProps {
   visible: boolean;
   selectedAgentId?: string;
-  onSelect: (agent: Agent) => void;
+  onSelect: (agent: AgentOption) => void;
   onClose: () => void;
 }
 
@@ -43,51 +39,32 @@ export const AgentBottomSheet = React.memo(function AgentBottomSheet({
   const bottomSheetRef = useRef<BottomSheet>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const snapPoints = useMemo(() => ['40%', '90%'], []);
+  const { agents, defaultAgents, customAgents, isLoading } = useAgents();
 
-  // Mock agents data
-  const allAgents: Agent[] = useMemo(
-    () => [
-      {
-        id: '35d8f884-5178-4c3e-858d-c5b7adfa186a',
-        name: 'Fast',
-        description: 'Quick responses for general queries',
-        icon: 'flash',
-      },
-      {
-        id: 'agent-2',
-        name: 'Creative',
-        description: 'Creative writing and brainstorming',
-        icon: 'bulb',
-      },
-      {
-        id: 'agent-3',
-        name: 'Code Expert',
-        description: 'Programming assistance and debugging',
-        icon: 'code-slash',
-      },
-      {
-        id: 'agent-4',
-        name: 'Research',
-        description: 'In-depth research and analysis',
-        icon: 'search',
-      },
-    ],
-    []
-  );
+  const snapPoints = useMemo(() => ['50%', '90%'], []);
 
+  // Filter agents by search query
   const filteredAgents = useMemo(() => {
-    if (!searchQuery.trim()) return allAgents;
+    if (!searchQuery.trim()) return agents;
     const query = searchQuery.toLowerCase();
-    return allAgents.filter(
+    return agents.filter(
       (agent) =>
         agent.name.toLowerCase().includes(query) ||
-        agent.description.toLowerCase().includes(query)
+        agent.description?.toLowerCase().includes(query)
     );
-  }, [searchQuery, allAgents]);
+  }, [searchQuery, agents]);
+
+  // Separate into default and custom for section headers
+  const { filteredDefault, filteredCustom } = useMemo(() => {
+    const defaultIds = new Set(defaultAgents.map(a => a.id));
+    return {
+      filteredDefault: filteredAgents.filter(a => defaultIds.has(a.id)),
+      filteredCustom: filteredAgents.filter(a => !defaultIds.has(a.id)),
+    };
+  }, [filteredAgents, defaultAgents]);
 
   const handleSelectAgent = useCallback(
-    (agent: Agent) => {
+    (agent: AgentOption) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       onSelect(agent);
       bottomSheetRef.current?.close();
@@ -96,28 +73,29 @@ export const AgentBottomSheet = React.memo(function AgentBottomSheet({
   );
 
   const renderAgent = useCallback(
-    ({ item }: { item: Agent }) => {
-      const isSelected = item.id === selectedAgentId;
+    (agent: AgentOption) => {
+      const isSelected = agent.id === selectedAgentId;
       return (
         <TouchableOpacity
+          key={agent.id}
           style={[
             styles.agentItem,
             {
               backgroundColor: isSelected ? colors.primary + '20' : colors.surface,
             },
           ]}
-          onPress={() => handleSelectAgent(item)}
+          onPress={() => handleSelectAgent(agent)}
           activeOpacity={0.7}
         >
           <View style={[styles.agentIcon, { backgroundColor: colors.primary + '20' }]}>
-            <Ionicons name={item.icon as any || 'flash'} size={24} color={colors.primary} />
+            <Ionicons name={agent.icon as any || 'flash'} size={24} color={colors.primary} />
           </View>
           <View style={styles.agentInfo}>
             <Text style={[styles.agentName, { color: colors.text }]}>
-              {item.name}
+              {agent.name}
             </Text>
-            <Text style={[styles.agentDescription, { color: colors.textSecondary }]}>
-              {item.description}
+            <Text style={[styles.agentDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+              {agent.description || 'No description'}
             </Text>
           </View>
           {isSelected && (
@@ -158,13 +136,54 @@ export const AgentBottomSheet = React.memo(function AgentBottomSheet({
           onChangeText={setSearchQuery}
         />
 
-        <BottomSheetFlatList
-          data={filteredAgents}
-          renderItem={renderAgent}
-          keyExtractor={(item: Agent) => item.id}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        />
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+              Loading agents...
+            </Text>
+          </View>
+        ) : (
+          <BottomSheetFlatList
+            data={[]}
+            renderItem={() => null}
+            ListHeaderComponent={
+              <>
+                {/* Default Agents Section */}
+                {filteredDefault.length > 0 && (
+                  <>
+                    <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>
+                      Default Agents
+                    </Text>
+                    {filteredDefault.map(renderAgent)}
+                  </>
+                )}
+
+                {/* Custom Agents Section */}
+                {filteredCustom.length > 0 && (
+                  <>
+                    <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>
+                      Your Custom Agents
+                    </Text>
+                    {filteredCustom.map(renderAgent)}
+                  </>
+                )}
+
+                {/* Empty State */}
+                {filteredAgents.length === 0 && (
+                  <View style={styles.emptyContainer}>
+                    <Ionicons name="search-outline" size={48} color={colors.textTertiary} />
+                    <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                      No agents found
+                    </Text>
+                  </View>
+                )}
+              </>
+            }
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
       </View>
     </BottomSheet>
   );
@@ -216,5 +235,31 @@ const styles = StyleSheet.create({
   agentDescription: {
     ...Typography.caption1,
     fontSize: 13,
+  },
+  sectionHeader: {
+    ...Typography.subhead,
+    fontWeight: '600',
+    marginTop: Layout.spacing.lg,
+    marginBottom: Layout.spacing.sm,
+    paddingHorizontal: Layout.spacing.xs,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Layout.spacing.xl,
+  },
+  loadingText: {
+    ...Typography.body,
+    marginTop: Layout.spacing.md,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Layout.spacing.xl,
+  },
+  emptyText: {
+    ...Typography.body,
+    marginTop: Layout.spacing.md,
   },
 });
