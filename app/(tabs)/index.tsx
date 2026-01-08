@@ -3,32 +3,32 @@
  * Dashboard with quick actions and recent activity
  */
 
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { Card } from '@/components/ui';
+import { Colors } from '@/constants/colors';
+import { Layout } from '@/constants/layout';
+import { Typography } from '@/constants/typography';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { Card } from '@/components/ui';
-import { useAuth } from '@/components/providers/AuthProvider';
-import { Colors } from '@/constants/colors';
-import { Typography } from '@/constants/typography';
-import { Layout } from '@/constants/layout';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { router } from 'expo-router';
+import React from 'react';
+import {
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface QuickAction {
   id: string;
   title: string;
   description: string;
   icon: keyof typeof Ionicons.glyphMap;
-  onPress: () => void;
+  route: string;
 }
 
 export default function HomeScreen() {
@@ -44,28 +44,35 @@ export default function HomeScreen() {
     setRefreshing(false);
   }, []);
 
-  const quickActions: QuickAction[] = [
+  const handleSettingsPress = React.useCallback(() => {
+    router.push('/(tabs)/settings');
+  }, [router]);
+
+  const handleSeeAllPress = React.useCallback(() => {
+    router.push('/(tabs)/chat');
+  }, [router]);
+
+  const handleQuickAction = React.useCallback((route: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push(route as any);
+  }, [router]);
+
+  const quickActions: QuickAction[] = React.useMemo(() => [
     {
       id: 'new-chat',
       title: 'New Chat',
       description: 'Start a conversation with an AI agent',
       icon: 'chatbubble-ellipses-outline',
-      onPress: () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        router.push('/(tabs)/chat');
-      },
+      route: '/(tabs)/chat',
     },
     {
       id: 'agents',
       title: 'Browse Agents',
       description: 'Explore available AI agents',
       icon: 'people-outline',
-      onPress: () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        router.push('/(tabs)/chat');
-      },
+      route: '/(tabs)/chat',
     },
-  ];
+  ], []);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -106,7 +113,7 @@ export default function HomeScreen() {
           </View>
           <TouchableOpacity
             style={[styles.profileButton, { backgroundColor: colors.surface }]}
-            onPress={() => router.push('/(tabs)/settings')}
+            onPress={handleSettingsPress}
           >
             <Ionicons name="person" size={24} color={colors.primary} />
           </TouchableOpacity>
@@ -122,7 +129,7 @@ export default function HomeScreen() {
               <Card
                 key={action.id}
                 variant="elevated"
-                onPress={action.onPress}
+                onPress={() => handleQuickAction(action.route)}
                 style={styles.actionCard}
               >
                 <View style={[styles.actionIcon, { backgroundColor: colors.primary + '20' }]}>
@@ -145,7 +152,7 @@ export default function HomeScreen() {
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               Recent Conversations
             </Text>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/chat')}>
+            <TouchableOpacity onPress={handleSeeAllPress}>
               <Text style={[styles.seeAll, { color: colors.primary }]}>
                 See All
               </Text>

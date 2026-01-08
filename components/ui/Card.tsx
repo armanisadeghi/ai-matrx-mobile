@@ -3,18 +3,18 @@
  * Elevated surface container with native iOS styling
  */
 
-import React from 'react';
-import {
-  View,
-  StyleSheet,
-  ViewStyle,
-  TouchableOpacity,
-  TouchableOpacityProps,
-} from 'react-native';
-import * as Haptics from 'expo-haptics';
 import { Colors } from '@/constants/colors';
 import { Layout } from '@/constants/layout';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import * as Haptics from 'expo-haptics';
+import React from 'react';
+import {
+  StyleSheet,
+  TouchableOpacity,
+  TouchableOpacityProps,
+  View,
+  ViewStyle,
+} from 'react-native';
 
 interface CardProps {
   children: React.ReactNode;
@@ -24,7 +24,7 @@ interface CardProps {
   haptic?: boolean;
 }
 
-export function Card({
+export const Card = React.memo(function Card({
   children,
   style,
   variant = 'default',
@@ -36,7 +36,7 @@ export function Card({
 
   const cardStyles = getCardStyles(variant, colors);
 
-  const handlePress = (event: any) => {
+  const handlePress = (event: Parameters<NonNullable<TouchableOpacityProps['onPress']>>[0]) => {
     if (haptic && onPress) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
@@ -56,7 +56,7 @@ export function Card({
   }
 
   return <View style={[styles.base, cardStyles, style]}>{children}</View>;
-}
+});
 
 function getCardStyles(
   variant: CardProps['variant'],

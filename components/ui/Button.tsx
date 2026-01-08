@@ -3,21 +3,21 @@
  * Native iOS-style button with haptic feedback
  */
 
+import { Colors } from '@/constants/colors';
+import { Layout } from '@/constants/layout';
+import { Typography } from '@/constants/typography';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import * as Haptics from 'expo-haptics';
 import React from 'react';
 import {
-  TouchableOpacity,
-  Text,
-  StyleSheet,
   ActivityIndicator,
-  ViewStyle,
+  StyleSheet,
+  Text,
   TextStyle,
+  TouchableOpacity,
   TouchableOpacityProps,
+  ViewStyle,
 } from 'react-native';
-import * as Haptics from 'expo-haptics';
-import { Colors } from '@/constants/colors';
-import { Typography } from '@/constants/typography';
-import { Layout } from '@/constants/layout';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
 interface ButtonProps extends TouchableOpacityProps {
   title: string;
@@ -29,7 +29,7 @@ interface ButtonProps extends TouchableOpacityProps {
   haptic?: boolean;
 }
 
-export function Button({
+export const Button = React.memo(function Button({
   title,
   variant = 'primary',
   size = 'medium',
@@ -45,7 +45,7 @@ export function Button({
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'dark'];
 
-  const handlePress = (event: any) => {
+  const handlePress = (event: Parameters<NonNullable<TouchableOpacityProps['onPress']>>[0]) => {
     if (haptic && !disabled && !isLoading) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
@@ -79,7 +79,7 @@ export function Button({
       )}
     </TouchableOpacity>
   );
-}
+});
 
 function getButtonStyles(
   variant: ButtonProps['variant'],

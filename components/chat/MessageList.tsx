@@ -3,21 +3,21 @@
  * Scrollable list of chat messages with auto-scroll
  */
 
-import React, { useRef, useEffect } from 'react';
-import {
-  FlatList,
-  StyleSheet,
-  View,
-  Text,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
-import { ChatBubble } from './ChatBubble';
 import { Colors } from '@/constants/colors';
-import { Typography } from '@/constants/typography';
 import { Layout } from '@/constants/layout';
+import { Typography } from '@/constants/typography';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Message } from '@/types/chat';
+import { FlashList, type FlashListRef } from '@shopify/flash-list';
+import React, { useEffect, useRef } from 'react';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { ChatBubble } from './ChatBubble';
 
 interface MessageListProps {
   messages: Message[];
@@ -34,23 +34,23 @@ export function MessageList({
 }: MessageListProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'dark'];
-  const flatListRef = useRef<FlatList>(null);
+  const flashListRef = useRef<FlashListRef<Message>>(null);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (messages.length > 0) {
       setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
+        flashListRef.current?.scrollToEnd({ animated: true });
       }, 100);
     }
   }, [messages.length, messages[messages.length - 1]?.content]);
 
-  const renderMessage = ({ item }: { item: Message }) => (
+  const renderMessage = React.useCallback(({ item }: { item: Message }) => (
     <ChatBubble
       message={item}
       isStreaming={item.id === streamingMessageId}
     />
-  );
+  ), [streamingMessageId]);
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
@@ -80,8 +80,8 @@ export function MessageList({
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <FlatList
-        ref={flatListRef}
+      <FlashList
+        ref={flashListRef}
         data={messages}
         renderItem={renderMessage}
         keyExtractor={(item) => item.id}
@@ -94,11 +94,6 @@ export function MessageList({
         ListFooterComponent={renderFooter}
         onEndReached={onEndReached}
         onEndReachedThreshold={0.1}
-        maintainVisibleContentPosition={{
-          minIndexForVisible: 0,
-          autoscrollToTopThreshold: 10,
-        }}
-        inverted={false}
       />
     </KeyboardAvoidingView>
   );

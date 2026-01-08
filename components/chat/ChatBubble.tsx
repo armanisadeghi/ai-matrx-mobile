@@ -3,20 +3,20 @@
  * Message bubble with native iOS styling
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
 import { Colors } from '@/constants/colors';
-import { Typography } from '@/constants/typography';
 import { Layout } from '@/constants/layout';
+import { Typography } from '@/constants/typography';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Message } from '@/types/chat';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 interface ChatBubbleProps {
   message: Message;
   isStreaming?: boolean;
 }
 
-export function ChatBubble({ message, isStreaming }: ChatBubbleProps) {
+export const ChatBubble = React.memo(function ChatBubble({ message, isStreaming }: ChatBubbleProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'dark'];
   
@@ -48,7 +48,7 @@ export function ChatBubble({ message, isStreaming }: ChatBubbleProps) {
       </Text>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

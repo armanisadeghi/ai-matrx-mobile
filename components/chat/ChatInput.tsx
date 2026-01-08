@@ -3,24 +3,23 @@
  * Native iOS-style message input with attachment support
  */
 
-import React, { useState, useRef } from 'react';
-import {
-  View,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
-  Keyboard,
-  Platform,
-  ActivityIndicator,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
-import { BlurView } from 'expo-blur';
 import { Colors } from '@/constants/colors';
-import { Typography } from '@/constants/typography';
 import { Layout } from '@/constants/layout';
+import { Typography } from '@/constants/typography';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { pickImage, takePhoto } from '@/lib/permissions';
+import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
+import React, { useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Platform,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -68,7 +67,7 @@ export function ChatInput({
     setShowActions(false);
   };
 
-  const handleContentSizeChange = (event: any) => {
+  const handleContentSizeChange = (event: { nativeEvent: { contentSize: { height: number } } }) => {
     const { height } = event.nativeEvent.contentSize;
     const newHeight = Math.min(
       Math.max(height, Layout.chat.inputMinHeight),

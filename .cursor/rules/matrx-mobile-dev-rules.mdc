@@ -1,0 +1,67 @@
+---
+alwaysApply: true
+---
+# AI Matrx Mobile — Development Standards
+
+## Platform-Native First
+
+**iOS:** Use `NativeTabs` from `expo-router/unstable-native-tabs` with SF Symbols (`sf` prop). Let iOS handle transitions—never override native animations.
+
+**Android:** Use Material icons. Ensure `edgeToEdgeEnabled` and `predictiveBackGestureEnabled` are enabled in app.json.
+
+**Platform divergence:** Use `Platform.select()` or `.ios.tsx`/`.android.tsx` files. Never force iOS patterns onto Android.
+
+**Navigation:** Use native `Stack` from expo-router. Configure via `headerLeft`/`headerRight`/`headerTitle` props—never build custom chrome.
+
+**Modals:** Use `presentation: 'modal'` or `'formSheet'` on Stack.Screen.
+
+**Haptics:** Use `expo-haptics` for all button presses and state changes.
+
+## Performance
+
+**Lists:** Always use `FlashList` from `@shopify/flash-list`. Never `ScrollView` + `.map()`.
+
+**Images:** Use `expo-image` with explicit `width`/`height` and `placeholder` prop.
+
+**Optimization:** Wrap expensive components in `React.memo()`. Use `useMemo`/`useCallback` for derived data and child handlers. Avoid inline objects/arrays as props.
+
+**Animations:** Use `react-native-reanimated` worklets. Keep on UI thread.
+
+**API:** Use centralized `api.ts` client. Implement optimistic updates and aggressive caching.
+
+## Code Quality
+
+**TypeScript:** Strict mode, no `any`. Explicit types for API responses, nav params, and props.
+
+**File structure:** One component per file, <200 lines. Co-locate styles with `StyleSheet.create()`.
+
+**Styling:** Use design tokens from `/constants`. No inline styles except dynamic values.
+
+**Error handling:** Try/catch on async calls. User-facing errors via toast/alert.
+
+## Supabase Integration
+
+**Tokens:** Store in `expo-secure-store` only.
+
+**API client:** Centralized `lib/api.ts` with auto-injected auth headers.
+
+**Offline:** Handle unreliable networks gracefully. Show loading states.
+
+## UI Standards
+
+**Loading:** Skeleton screens for content areas. Spinners for actions only.
+
+**Empty states:** Design for zero data. Show helpful CTA.
+
+**Forms:** Use native keyboard types and autofill. Show inline validation.
+
+**Accessibility:** All touchables need `accessibilityLabel` and `accessibilityRole`. Minimum 44pt targets.
+
+---
+
+**What to avoid:**
+- Custom navigation chrome, tab bars, or modals
+- `ScrollView` + `.map()` for lists
+- Inline styles or functions in render
+- `any` types
+- Building what the platform provides natively
