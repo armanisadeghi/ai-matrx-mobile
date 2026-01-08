@@ -10,6 +10,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Message } from '@/types/chat';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { MarkdownText } from './MarkdownText';
 
 interface ChatBubbleProps {
   message: Message;
@@ -38,10 +39,16 @@ export const ChatBubble = React.memo(function ChatBubble({ message, isStreaming 
   return (
     <View style={[styles.container, isUser ? styles.userContainer : styles.agentContainer]}>
       <View style={[styles.bubble, bubbleStyle, isUser ? styles.userBubble : styles.agentBubble]}>
-        <Text style={[styles.messageText, textStyle]}>
-          {message.content}
-          {isStreaming && <Text style={styles.cursor}>▋</Text>}
-        </Text>
+        {isUser ? (
+          <Text style={[styles.messageText, textStyle]}>
+            {message.content}
+          </Text>
+        ) : (
+          <View>
+            <MarkdownText content={message.content} isUser={isUser} />
+            {isStreaming && <Text style={[styles.cursor, textStyle]}>▋</Text>}
+          </View>
+        )}
       </View>
       <Text style={[styles.timestamp, { color: colors.textTertiary }]}>
         {formatTime(message.createdAt)}

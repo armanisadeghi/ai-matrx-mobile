@@ -25,7 +25,11 @@ alwaysApply: true
 
 **Optimization:** Wrap expensive components in `React.memo()`. Use `useMemo`/`useCallback` for derived data and child handlers. Avoid inline objects/arrays as props.
 
-**Animations:** Use `react-native-reanimated` worklets. Keep on UI thread.
+**Animations:** Use `react-native-reanimated` worklets for UI thread animations. Use `lottie-react-native` for complex animations.
+
+**Markdown:** Use `react-native-marked` with memoization for AI responses. Wrap in `React.memo` with content comparison.
+
+**Keyboard:** Use `KeyboardStickyView` from `react-native-keyboard-controller` for chat inputs—never `KeyboardAvoidingView`.
 
 **API:** Use centralized `api.ts` client. Implement optimistic updates and aggressive caching.
 
@@ -49,11 +53,13 @@ alwaysApply: true
 
 ## UI Standards
 
-**Loading:** Skeleton screens for content areas. Spinners for actions only.
+**Loading:** Skeleton screens for content areas. Spinners for actions only. Use `TypingIndicator` with Lottie for AI responses.
 
 **Empty states:** Design for zero data. Show helpful CTA.
 
 **Forms:** Use native keyboard types and autofill. Show inline validation.
+
+**Bottom Sheets:** Use `@gorhom/bottom-sheet` for native-feeling modals and sheets.
 
 **Accessibility:** All touchables need `accessibilityLabel` and `accessibilityRole`. Minimum 44pt targets.
 

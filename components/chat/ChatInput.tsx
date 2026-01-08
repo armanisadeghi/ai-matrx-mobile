@@ -20,6 +20,8 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { KeyboardStickyView } from 'react-native-keyboard-controller';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -77,9 +79,11 @@ export function ChatInput({
   };
 
   const canSend = message.trim().length > 0 && !isSending;
+  const insets = useSafeAreaInsets();
 
   return (
-    <BlurView intensity={80} tint={colorScheme ?? 'dark'} style={styles.blurContainer}>
+    <KeyboardStickyView offset={{ closed: 0, opened: insets.bottom }}>
+      <BlurView intensity={80} tint={colorScheme ?? 'dark'} style={styles.blurContainer}>
       <View style={[styles.container, { borderTopColor: colors.border }]}>
         {/* Attachment actions */}
         {showActions && (
@@ -152,15 +156,13 @@ export function ChatInput({
         </View>
       </View>
     </BlurView>
+    </KeyboardStickyView>
   );
 }
 
 const styles = StyleSheet.create({
   blurContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+    width: '100%',
   },
   container: {
     borderTopWidth: 0.5,

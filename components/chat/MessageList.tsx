@@ -11,19 +11,20 @@ import { Message } from '@/types/chat';
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import React, { useEffect, useRef } from 'react';
 import {
-  KeyboardAvoidingView,
-  Platform,
   StyleSheet,
   Text,
-  View,
+  View
 } from 'react-native';
 import { ChatBubble } from './ChatBubble';
+import { TypingIndicator } from './TypingIndicator';
 
 interface MessageListProps {
   messages: Message[];
   streamingMessageId?: string;
   onEndReached?: () => void;
   isLoadingMore?: boolean;
+  isTyping?: boolean;
+  statusMessage?: string | null;
 }
 
 export function MessageList({
@@ -31,6 +32,8 @@ export function MessageList({
   streamingMessageId,
   onEndReached,
   isLoadingMore,
+  isTyping = false,
+  statusMessage,
 }: MessageListProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'dark'];
@@ -75,11 +78,7 @@ export function MessageList({
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-    >
+    <View style={styles.container}>
       <FlashList
         ref={flashListRef}
         data={messages}
@@ -95,7 +94,8 @@ export function MessageList({
         onEndReached={onEndReached}
         onEndReachedThreshold={0.1}
       />
-    </KeyboardAvoidingView>
+      <TypingIndicator visible={isTyping} statusMessage={statusMessage} />
+    </View>
   );
 }
 
