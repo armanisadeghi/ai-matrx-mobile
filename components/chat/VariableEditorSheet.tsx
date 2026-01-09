@@ -10,14 +10,12 @@ import { Typography } from '@/constants/typography';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { formatVariableName } from '@/lib/variable-utils';
 import { PromptVariable } from '@/types/agent';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Platform,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { VariableInput } from './VariableInput';
@@ -40,28 +38,38 @@ export function VariableEditorSheet({
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'dark'];
   const bottomSheetRef = useRef<BottomSheet>(null);
+  
+  // Keep a "display" version of variable that persists during close animation
+  const [displayVariable, setDisplayVariable] = React.useState<PromptVariable | null>(variable);
+  const [displayValue, setDisplayValue] = React.useState<string>(value);
 
-  // Snap points for the bottom sheet
-  const snapPoints = useMemo(() => ['60%', '90%'], []);
-
-  // Open/close the sheet based on isOpen prop
-  useEffect(() => {
-    if (isOpen && variable) {
-      bottomSheetRef.current?.expand();
-    } else {
-      bottomSheetRef.current?.close();
+  // Update display variable when a new one is set
+  React.useEffect(() => {
+    if (variable) {
+      setDisplayVariable(variable);
+      setDisplayValue(value);
     }
+    // Don't clear displayVariable when variable becomes null
+    // Keep it visible during close animation
+  }, [variable, value]);
+
+  // Snap points for the bottom sheet: half-open and fully-open
+  // User can swipe between these, or swipe down to close
+  const snapPoints = useMemo(() => ['50%', '90%'], []);
+
+  // Calculate the proper index based on isOpen and variable
+  const sheetIndex = useMemo(() => {
+    return isOpen && variable ? 0 : -1;
   }, [isOpen, variable]);
 
-  const handleClose = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    bottomSheetRef.current?.close();
-    onClose();
-  }, [onClose]);
-
   const handleSheetChange = useCallback((index: number) => {
+    // When sheet is fully closed (index -1), notify parent
     if (index === -1) {
       onClose();
+      // Clear display variable after sheet is closed
+      setTimeout(() => {
+        setDisplayVariable(null);
+      }, 100);
     }
   }, [onClose]);
 
@@ -86,16 +94,15 @@ export function VariableEditorSheet({
     []
   );
 
-  if (!variable) return null;
-
-  const formattedLabel = formatVariableName(variable.name);
+  const formattedLabel = displayVariable ? formatVariableName(displayVariable.name) : '';
 
   return (
     <BottomSheet
       ref={bottomSheetRef}
-      index={-1}
+      index={sheetIndex}
       snapPoints={snapPoints}
       enablePanDownToClose
+      enableDynamicSizing={false}
       backdropComponent={renderBackdrop}
       onChange={handleSheetChange}
       backgroundStyle={{
@@ -106,45 +113,43 @@ export function VariableEditorSheet({
       }}
       style={styles.bottomSheet}
     >
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        {/* Header */}
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <View style={styles.headerContent}>
-            <Text style={[styles.title, { color: colors.text }]}>
-              {formattedLabel}
-              {variable.required && (
-                <Text style={[styles.required, { color: colors.error }]}> *</Text>
-              )}
-            </Text>
-            {variable.helpText && (
-              <Text style={[styles.helpText, { color: colors.textSecondary }]}>
-                {variable.helpText}
+      {displayVariable ? (
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+          {/* Header - No close button, native gestures only */}
+          <View style={[styles.header, { borderBottomColor: colors.border }]}>
+            <View style={styles.headerContent}>
+              <Text style={[styles.title, { color: colors.text }]}>
+                {formattedLabel}
+                {displayVariable.required && (
+                  <Text style={[styles.required, { color: colors.error }]}> *</Text>
+                )}
               </Text>
-            )}
+              {displayVariable.helpText && (
+                <Text style={[styles.helpText, { color: colors.textSecondary }]}>
+                  {displayVariable.helpText}
+                </Text>
+              )}
+            </View>
           </View>
-          <TouchableOpacity
-            onPress={handleClose}
-            style={styles.closeButton}
-            accessibilityRole="button"
-            accessibilityLabel="Close editor"
-          >
-            <Ionicons name="close-circle" size={28} color={colors.textSecondary} />
-          </TouchableOpacity>
-        </View>
 
-        {/* Content - Scrollable */}
-        <BottomSheetScrollView
-          style={styles.content}
-          contentContainerStyle={styles.contentContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          <VariableInput
-            variable={variable}
-            value={value}
-            onChange={handleValueChange}
-          />
-        </BottomSheetScrollView>
-      </View>
+          {/* Content - Scrollable */}
+          <BottomSheetScrollView
+            style={styles.content}
+            contentContainerStyle={styles.contentContainer}
+            showsVerticalScrollIndicator={false}
+          >
+            <VariableInput
+              variable={displayVariable}
+              value={displayValue}
+              onChange={handleValueChange}
+              autoOpen={true}
+              onRequestClose={onClose}
+            />
+          </BottomSheetScrollView>
+        </View>
+      ) : (
+        <View />
+      )}
     </BottomSheet>
   );
 }
@@ -164,17 +169,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
     paddingHorizontal: Layout.spacing.lg,
-    paddingTop: Layout.spacing.sm,
+    paddingTop: Layout.spacing.md,
     paddingBottom: Layout.spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerContent: {
     flex: 1,
-    marginRight: Layout.spacing.md,
   },
   title: {
     ...Typography.title3,
@@ -190,13 +191,11 @@ const styles = StyleSheet.create({
     ...Typography.caption1,
     fontSize: 14,
   },
-  closeButton: {
-    padding: Layout.spacing.xs,
-  },
   content: {
     flex: 1,
   },
   contentContainer: {
+    flexGrow: 1,
     padding: Layout.spacing.lg,
     paddingBottom: Platform.select({ ios: Layout.spacing.xxl, android: Layout.spacing.xl }),
   },

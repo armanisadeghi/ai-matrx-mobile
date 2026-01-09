@@ -11,7 +11,7 @@ import { adjustNumberValue, formatCheckboxValue, formatOtherValue, parseCheckbox
 import { PromptVariable } from '@/types/agent';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Modal,
     Platform,
@@ -29,9 +29,11 @@ interface VariableInputProps {
   variable: PromptVariable;
   value: string;
   onChange: (value: string) => void;
+  autoOpen?: boolean; // Auto-open modals (for bottom sheet context)
+  onRequestClose?: () => void; // Callback to close parent (bottom sheet)
 }
 
-export function VariableInput({ variable, value, onChange }: VariableInputProps) {
+export function VariableInput({ variable, value, onChange, autoOpen = false, onRequestClose }: VariableInputProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'dark'];
   const componentType = variable.customComponent?.type || 'textarea';
@@ -45,6 +47,7 @@ export function VariableInput({ variable, value, onChange }: VariableInputProps)
           value={value}
           onChange={onChange}
           colors={colors}
+          onRequestClose={onRequestClose}
         />
       );
     case 'radio':
@@ -54,6 +57,8 @@ export function VariableInput({ variable, value, onChange }: VariableInputProps)
           value={value}
           onChange={onChange}
           colors={colors}
+          autoOpen={autoOpen}
+          onRequestClose={onRequestClose}
         />
       );
     case 'checkbox':
@@ -63,6 +68,8 @@ export function VariableInput({ variable, value, onChange }: VariableInputProps)
           value={value}
           onChange={onChange}
           colors={colors}
+          autoOpen={autoOpen}
+          onRequestClose={onRequestClose}
         />
       );
     case 'select':
@@ -72,6 +79,8 @@ export function VariableInput({ variable, value, onChange }: VariableInputProps)
           value={value}
           onChange={onChange}
           colors={colors}
+          autoOpen={autoOpen}
+          onRequestClose={onRequestClose}
         />
       );
     case 'number':
@@ -81,6 +90,7 @@ export function VariableInput({ variable, value, onChange }: VariableInputProps)
           value={value}
           onChange={onChange}
           colors={colors}
+          onRequestClose={onRequestClose}
         />
       );
     case 'textarea':
@@ -91,6 +101,7 @@ export function VariableInput({ variable, value, onChange }: VariableInputProps)
           value={value}
           onChange={onChange}
           colors={colors}
+          onRequestClose={onRequestClose}
         />
       );
   }
@@ -105,11 +116,14 @@ interface InputComponentProps {
   value: string;
   onChange: (value: string) => void;
   colors: any;
+  autoOpen?: boolean;
+  onRequestClose?: () => void;
 }
 
-function TextareaInput({ variable, value, onChange, colors }: InputComponentProps) {
+function TextareaInput({ variable, value, onChange, colors, onRequestClose }: InputComponentProps) {
+  // Textarea doesn't auto-close - user needs to swipe down or tap backdrop
   return (
-    <View style={styles.inputContainer}>
+    <View style={styles.textareaContainer}>
       <TextInput
         style={[
           styles.textarea,
@@ -124,8 +138,8 @@ function TextareaInput({ variable, value, onChange, colors }: InputComponentProp
         placeholder={variable.helpText || `Enter ${variable.name}`}
         placeholderTextColor={colors.textTertiary}
         multiline
-        numberOfLines={4}
         textAlignVertical="top"
+        scrollEnabled={false}
       />
     </View>
   );
@@ -135,7 +149,7 @@ function TextareaInput({ variable, value, onChange, colors }: InputComponentProp
 // TOGGLE INPUT
 // ============================================================================
 
-function ToggleInput({ variable, value, onChange, colors }: InputComponentProps) {
+function ToggleInput({ variable, value, onChange, colors, onRequestClose }: InputComponentProps) {
   const toggleValues = variable.customComponent?.toggleValues || ['No', 'Yes'];
   const [offLabel, onLabel] = toggleValues;
   const isOn = value === onLabel;
@@ -143,6 +157,10 @@ function ToggleInput({ variable, value, onChange, colors }: InputComponentProps)
   const handleToggle = (newValue: boolean) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onChange(newValue ? onLabel : offLabel);
+    // Close parent sheet after toggle
+    if (onRequestClose) {
+      setTimeout(() => onRequestClose(), 300);
+    }
   };
 
   return (
@@ -167,8 +185,8 @@ function ToggleInput({ variable, value, onChange, colors }: InputComponentProps)
 // RADIO INPUT
 // ============================================================================
 
-function RadioInput({ variable, value, onChange, colors }: InputComponentProps) {
-  const [showModal, setShowModal] = useState(false);
+function RadioInput({ variable, value, onChange, colors, autoOpen = false, onRequestClose }: InputComponentProps) {
+  const [showModal, setShowModal] = useState(autoOpen); // Auto-open if in bottom sheet
   const [showOtherInput, setShowOtherInput] = useState(false);
   const [otherText, setOtherText] = useState('');
   
@@ -177,6 +195,13 @@ function RadioInput({ variable, value, onChange, colors }: InputComponentProps) 
 
   const displayValue = value || '(not selected)';
   const parsedOther = parseOtherValue(value);
+  
+  // Auto-open on mount if autoOpen is true
+  useEffect(() => {
+    if (autoOpen) {
+      setShowModal(true);
+    }
+  }, [autoOpen]);
 
   const handleSelect = (option: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -187,6 +212,10 @@ function RadioInput({ variable, value, onChange, colors }: InputComponentProps) 
       onChange(option);
       setShowModal(false);
       setShowOtherInput(false);
+      // Close parent sheet if in auto-open mode
+      if (autoOpen && onRequestClose) {
+        setTimeout(() => onRequestClose(), 300); // Delay to allow modal close animation
+      }
     }
   };
 
@@ -195,25 +224,32 @@ function RadioInput({ variable, value, onChange, colors }: InputComponentProps) 
       onChange(formatOtherValue(otherText.trim()));
       setShowModal(false);
       setShowOtherInput(false);
+      // Close parent sheet if in auto-open mode
+      if (autoOpen && onRequestClose) {
+        setTimeout(() => onRequestClose(), 300); // Delay to allow modal close animation
+      }
     }
   };
 
   return (
     <>
-      <TouchableOpacity
-        style={[styles.selectButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setShowModal(true);
-        }}
-        accessibilityRole="button"
-        accessibilityLabel={`Select ${variable.name}`}
-      >
-        <Text style={[styles.selectButtonText, { color: colors.text }]} numberOfLines={1}>
-          {displayValue}
-        </Text>
-        <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
-      </TouchableOpacity>
+      {/* Only show button if not auto-opening */}
+      {!autoOpen && (
+        <TouchableOpacity
+          style={[styles.selectButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowModal(true);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={`Select ${variable.name}`}
+        >
+          <Text style={[styles.selectButtonText, { color: colors.text }]} numberOfLines={1}>
+            {displayValue}
+          </Text>
+          <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
+        </TouchableOpacity>
+      )}
 
       <Modal
         visible={showModal}
@@ -308,8 +344,8 @@ function RadioInput({ variable, value, onChange, colors }: InputComponentProps) 
 // CHECKBOX INPUT
 // ============================================================================
 
-function CheckboxInput({ variable, value, onChange, colors }: InputComponentProps) {
-  const [showModal, setShowModal] = useState(false);
+function CheckboxInput({ variable, value, onChange, colors, autoOpen = false, onRequestClose }: InputComponentProps) {
+  const [showModal, setShowModal] = useState(autoOpen); // Auto-open if in bottom sheet
   const [showOtherInput, setShowOtherInput] = useState(false);
   const [otherText, setOtherText] = useState('');
   
@@ -320,6 +356,13 @@ function CheckboxInput({ variable, value, onChange, colors }: InputComponentProp
   const displayValue = selectedValues.length > 0 
     ? `${selectedValues.length} selected` 
     : '(none selected)';
+  
+  // Auto-open on mount if autoOpen is true
+  useEffect(() => {
+    if (autoOpen) {
+      setShowModal(true);
+    }
+  }, [autoOpen]);
 
   const toggleOption = (option: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -341,20 +384,23 @@ function CheckboxInput({ variable, value, onChange, colors }: InputComponentProp
 
   return (
     <>
-      <TouchableOpacity
-        style={[styles.selectButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setShowModal(true);
-        }}
-        accessibilityRole="button"
-        accessibilityLabel={`Select ${variable.name}`}
-      >
-        <Text style={[styles.selectButtonText, { color: colors.text }]} numberOfLines={1}>
-          {displayValue}
-        </Text>
-        <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
-      </TouchableOpacity>
+      {/* Only show button if not auto-opening */}
+      {!autoOpen && (
+        <TouchableOpacity
+          style={[styles.selectButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowModal(true);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={`Select ${variable.name}`}
+        >
+          <Text style={[styles.selectButtonText, { color: colors.text }]} numberOfLines={1}>
+            {displayValue}
+          </Text>
+          <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
+        </TouchableOpacity>
+      )}
 
       <Modal
         visible={showModal}
@@ -364,11 +410,21 @@ function CheckboxInput({ variable, value, onChange, colors }: InputComponentProp
       >
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
           <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-            <TouchableOpacity onPress={() => setShowModal(false)} style={styles.modalCloseButton}>
+            <TouchableOpacity onPress={() => {
+              setShowModal(false);
+              if (autoOpen && onRequestClose) {
+                setTimeout(() => onRequestClose(), 300);
+              }
+            }} style={styles.modalCloseButton}>
               <Text style={[styles.modalCloseText, { color: colors.primary }]}>Cancel</Text>
             </TouchableOpacity>
             <Text style={[styles.modalTitle, { color: colors.text }]}>Select Options</Text>
-            <TouchableOpacity onPress={() => setShowModal(false)} style={styles.modalCloseButton}>
+            <TouchableOpacity onPress={() => {
+              setShowModal(false);
+              if (autoOpen && onRequestClose) {
+                setTimeout(() => onRequestClose(), 300);
+              }
+            }} style={styles.modalCloseButton}>
               <Text style={[styles.modalCloseText, { color: colors.primary }]}>Done</Text>
             </TouchableOpacity>
           </View>
@@ -490,16 +546,17 @@ function CheckboxInput({ variable, value, onChange, colors }: InputComponentProp
 // SELECT INPUT
 // ============================================================================
 
-function SelectInput({ variable, value, onChange, colors }: InputComponentProps) {
+function SelectInput({ variable, value, onChange, colors, autoOpen = false, onRequestClose }: InputComponentProps) {
   // Use same component as Radio but with a different visual style
-  return <RadioInput variable={variable} value={value} onChange={onChange} colors={colors} />;
+  return <RadioInput variable={variable} value={value} onChange={onChange} colors={colors} autoOpen={autoOpen} onRequestClose={onRequestClose} />;
 }
 
 // ============================================================================
 // NUMBER INPUT
 // ============================================================================
 
-function NumberInput({ variable, value, onChange, colors }: InputComponentProps) {
+function NumberInput({ variable, value, onChange, colors, onRequestClose }: InputComponentProps) {
+  // Number doesn't auto-close - user might want to adjust multiple times
   const min = variable.customComponent?.min;
   const max = variable.customComponent?.max;
   const step = variable.customComponent?.step || 1;
@@ -555,13 +612,18 @@ const styles = StyleSheet.create({
   inputContainer: {
     width: '100%',
   },
+  textareaContainer: {
+    width: '100%',
+    minHeight: 200,
+  },
   textarea: {
     ...Typography.body,
     fontSize: 16,
     borderWidth: 1,
     borderRadius: Layout.radius.md,
     padding: Layout.spacing.md,
-    minHeight: 100,
+    minHeight: 200,
+    // No maxHeight - let it grow with content, BottomSheetScrollView handles scrolling
   },
   toggleContainer: {
     borderRadius: Layout.radius.md,

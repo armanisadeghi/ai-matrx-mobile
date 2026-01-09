@@ -18,13 +18,20 @@ export function formatVariableName(name: string): string {
 
 /**
  * Initialize variable values from variable defaults
+ * Only includes variables that have a truthy defaultValue
+ * Matches web version behavior exactly (line 73 of ChatContainer.tsx)
  */
 export function initializeVariableValues(
   variableDefaults: PromptVariable[]
 ): Record<string, string> {
   const values: Record<string, string> = {};
   variableDefaults.forEach((variable) => {
-    values[variable.name] = variable.defaultValue;
+    // Use truthy check to match web version: if (variable.defaultValue)
+    // This excludes: undefined, null, and empty string ''
+    // Empty strings are intentionally excluded - they fall back to helpText display
+    if (variable.defaultValue) {
+      values[variable.name] = variable.defaultValue;
+    }
   });
   return values;
 }
@@ -200,20 +207,27 @@ export function shouldShowCountSummary(variable: PromptVariable, value: string):
 /**
  * Get display preview for a variable value in navigation rows
  * Smart truncation and summary based on content type
+ * 
+ * Note: This function expects the value parameter to already have defaultValue
+ * applied (via nullish coalescing in the calling code)
  */
 export function getVariableDisplayValue(variable: PromptVariable, value: string): string {
   const componentType = variable.customComponent?.type || 'textarea';
   
-  // Empty value - show help text or placeholder
-  if (!value || !value.trim()) {
+  // Empty value - show help text as placeholder
+  // This matches web version behavior (line 96 of PublicVariableInputs)
+  if (!value || value.trim() === '') {
     return variable.helpText || 'Not set';
   }
   
-  // Checkbox - show count
+  // Checkbox - show count summary
   if (componentType === 'checkbox') {
     const selected = parseCheckboxValue(value);
-    if (selected.length === 0) return 'None selected';
-    if (selected.length === 1) return selected[0].length > 30 ? `${selected[0].substring(0, 30)}...` : selected[0];
+    if (selected.length === 0) return variable.helpText || 'None selected';
+    if (selected.length === 1) {
+      const firstValue = selected[0];
+      return firstValue.length > 30 ? `${firstValue.substring(0, 30)}...` : firstValue;
+    }
     return `${selected.length} selected`;
   }
   

@@ -124,16 +124,20 @@ export function VariableInputList({
                 },
               ]}
             >
-              {variableDefaults.map((variable, index) => (
-                <VariableNavigationRow
-                  key={variable.name}
-                  variable={variable}
-                  value={values[variable.name] || ''}
-                  onPress={() => handleOpenEditor(variable)}
-                  isFirst={index === 0}
-                  isLast={index === variableDefaults.length - 1}
-                />
-              ))}
+              {variableDefaults.map((variable, index) => {
+                // Use nullish coalescing to properly fall back to defaultValue
+                const currentValue = values[variable.name] ?? variable.defaultValue ?? '';
+                return (
+                  <VariableNavigationRow
+                    key={variable.name}
+                    variable={variable}
+                    value={currentValue}
+                    onPress={() => handleOpenEditor(variable)}
+                    isFirst={index === 0}
+                    isLast={index === variableDefaults.length - 1}
+                  />
+                );
+              })}
             </View>
           </ScrollView>
         )}
@@ -142,7 +146,11 @@ export function VariableInputList({
       {/* Bottom Sheet Editor */}
       <VariableEditorSheet
         variable={editingVariable}
-        value={editingVariable ? values[editingVariable.name] || '' : ''}
+        value={
+          editingVariable
+            ? values[editingVariable.name] ?? editingVariable.defaultValue ?? ''
+            : ''
+        }
         onChange={(value) => {
           if (editingVariable) {
             handleValueChange(editingVariable.name, value);
