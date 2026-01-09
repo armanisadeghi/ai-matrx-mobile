@@ -34,6 +34,7 @@ interface ChatInputProps {
   onModeSelect?: () => void;
   onAttachFile?: () => void;
   onVoiceRecord?: () => void;
+  hasVariableValues?: boolean; // Allow sending with empty message if variables have values
 }
 
 export function ChatInput({
@@ -46,6 +47,7 @@ export function ChatInput({
   onModeSelect,
   onAttachFile,
   onVoiceRecord,
+  hasVariableValues = false,
 }: ChatInputProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'dark'];
@@ -55,7 +57,8 @@ export function ChatInput({
   const [inputHeight, setInputHeight] = useState(20); // Start with single line (lineHeight)
 
   const handleSend = () => {
-    if (!message.trim() || isSending) return;
+    // Allow sending if: (message has content) OR (has variable values)
+    if ((!message.trim() && !hasVariableValues) || isSending) return;
     
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onSend(message.trim());
@@ -94,7 +97,8 @@ export function ChatInput({
     setInputHeight(newHeight);
   };
 
-  const canSend = message.trim().length > 0 && !isSending;
+  // Can send if: (has message text) OR (has variable values)
+  const canSend = (message.trim().length > 0 || hasVariableValues) && !isSending;
   const insets = useSafeAreaInsets();
 
   return (

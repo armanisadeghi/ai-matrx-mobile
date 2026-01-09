@@ -42,16 +42,22 @@ export function VariableEditorSheet({
   // Keep a "display" version of variable that persists during close animation
   const [displayVariable, setDisplayVariable] = React.useState<PromptVariable | null>(variable);
   const [displayValue, setDisplayValue] = React.useState<string>(value);
+  const [isClosing, setIsClosing] = React.useState(false);
 
-  // Update display variable when a new one is set
+  // Update display variable when a new variable is opened
   React.useEffect(() => {
-    if (variable) {
+    if (variable && !isClosing) {
       setDisplayVariable(variable);
       setDisplayValue(value);
     }
-    // Don't clear displayVariable when variable becomes null
-    // Keep it visible during close animation
-  }, [variable, value]);
+  }, [variable]);
+
+  // Update display value when value changes (for live updates within the sheet)
+  React.useEffect(() => {
+    if (variable && !isClosing) {
+      setDisplayValue(value);
+    }
+  }, [value]);
 
   // Snap points for the bottom sheet: half-open and fully-open
   // User can swipe between these, or swipe down to close
@@ -63,13 +69,17 @@ export function VariableEditorSheet({
   }, [isOpen, variable]);
 
   const handleSheetChange = useCallback((index: number) => {
-    // When sheet is fully closed (index -1), notify parent
+    // When sheet starts closing (from any snap point to -1)
     if (index === -1) {
+      setIsClosing(true);
       onClose();
-      // Clear display variable after sheet is closed
+      // Clear display variable after animation completes
       setTimeout(() => {
         setDisplayVariable(null);
-      }, 100);
+        setIsClosing(false);
+      }, 300);
+    } else {
+      setIsClosing(false);
     }
   }, [onClose]);
 

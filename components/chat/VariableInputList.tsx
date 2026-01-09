@@ -26,8 +26,6 @@ interface VariableInputListProps {
   variableDefaults: PromptVariable[];
   onValuesChange: (values: Record<string, string>) => void;
   initialValues?: Record<string, string>;
-  isExpanded?: boolean;
-  onToggleExpanded?: () => void;
   hasMessages?: boolean;
 }
 
@@ -35,8 +33,6 @@ export function VariableInputList({
   variableDefaults,
   onValuesChange,
   initialValues,
-  isExpanded = true,
-  onToggleExpanded,
   hasMessages = false,
 }: VariableInputListProps) {
   const colorScheme = useColorScheme();
@@ -67,80 +63,50 @@ export function VariableInputList({
     setEditingVariable(null);
   }, []);
 
-  const handleToggle = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onToggleExpanded?.();
-  };
-
   // Don't show if no variables
   if (!variableDefaults || variableDefaults.length === 0) {
+    return null;
+  }
+
+  // Don't show variables if there are messages (variables are only for first message)
+  if (hasMessages) {
     return null;
   }
 
   return (
     <>
       <View style={styles.container}>
-        {/* Collapsible header - only show after first message */}
-        {hasMessages && onToggleExpanded && (
-          <TouchableOpacity
+        {/* Variable navigation rows - always expanded, no collapsible header */}
+        <ScrollView
+          style={[styles.content, { backgroundColor: colors.background }]}
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          <View
             style={[
-              styles.header,
+              styles.rowsContainer,
               {
                 backgroundColor: colors.surface,
-                borderBottomColor: colors.border,
+                borderColor: colors.border,
               },
             ]}
-            onPress={handleToggle}
-            accessibilityRole="button"
-            accessibilityLabel={isExpanded ? 'Collapse variables' : 'Expand variables'}
           >
-            <View style={styles.headerContent}>
-              <Ionicons name="options-outline" size={20} color={colors.primary} />
-              <Text style={[styles.headerText, { color: colors.text }]}>
-                Variables ({variableDefaults.length})
-              </Text>
-            </View>
-            <Ionicons
-              name={isExpanded ? 'chevron-up' : 'chevron-down'}
-              size={20}
-              color={colors.textSecondary}
-            />
-          </TouchableOpacity>
-        )}
-
-        {/* Variable navigation rows */}
-        {isExpanded && (
-          <ScrollView
-            style={[styles.content, { backgroundColor: colors.background }]}
-            contentContainerStyle={styles.contentContainer}
-            showsVerticalScrollIndicator={false}
-          >
-            <View
-              style={[
-                styles.rowsContainer,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                },
-              ]}
-            >
-              {variableDefaults.map((variable, index) => {
-                // Use nullish coalescing to properly fall back to defaultValue
-                const currentValue = values[variable.name] ?? variable.defaultValue ?? '';
-                return (
-                  <VariableNavigationRow
-                    key={variable.name}
-                    variable={variable}
-                    value={currentValue}
-                    onPress={() => handleOpenEditor(variable)}
-                    isFirst={index === 0}
-                    isLast={index === variableDefaults.length - 1}
-                  />
-                );
-              })}
-            </View>
-          </ScrollView>
-        )}
+            {variableDefaults.map((variable, index) => {
+              // Use nullish coalescing to properly fall back to defaultValue
+              const currentValue = values[variable.name] ?? variable.defaultValue ?? '';
+              return (
+                <VariableNavigationRow
+                  key={variable.name}
+                  variable={variable}
+                  value={currentValue}
+                  onPress={() => handleOpenEditor(variable)}
+                  isFirst={index === 0}
+                  isLast={index === variableDefaults.length - 1}
+                />
+              );
+            })}
+          </View>
+        </ScrollView>
       </View>
 
       {/* Bottom Sheet Editor */}
@@ -166,24 +132,6 @@ export function VariableInputList({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Layout.spacing.lg,
-    paddingVertical: Layout.spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Layout.spacing.sm,
-  },
-  headerText: {
-    ...Typography.body,
-    fontSize: 16,
-    fontWeight: '600',
   },
   content: {
     maxHeight: 500,

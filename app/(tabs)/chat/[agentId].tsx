@@ -69,14 +69,6 @@ export default function AgentConversationScreen() {
   const [variableValues, setVariableValues] = useState<Record<string, string>>(() =>
     initializeVariableValues(variableDefaults)
   );
-  const [isVariablesExpanded, setIsVariablesExpanded] = useState(true);
-
-  // Collapse variables after first message
-  useEffect(() => {
-    if (messages.length > 0 && isVariablesExpanded) {
-      setIsVariablesExpanded(false);
-    }
-  }, [messages.length]);
 
   const handleSend = useCallback(
     (messageText: string) => {
@@ -97,11 +89,12 @@ export default function AgentConversationScreen() {
     setVariableValues(values);
   }, []);
 
-  const handleToggleVariables = useCallback(() => {
-    setIsVariablesExpanded((prev) => !prev);
-  }, []);
-
   const hasMessages = messages.length > 0;
+  
+  // Check if any variable has a value
+  const hasVariableValues = Object.keys(variableValues).some(
+    key => variableValues[key] && variableValues[key].trim() !== ''
+  );
   const placeholderText = hasVariables && !hasMessages
     ? 'Enter your message (or press send to use variables only)'
     : 'Ask Matrx';
@@ -131,15 +124,13 @@ export default function AgentConversationScreen() {
           statusMessage={statusMessage}
         />
 
-        {/* Variable inputs - Always visible when agent has variables */}
-        {hasVariables && (
+        {/* Variable inputs - Only visible before first message */}
+        {hasVariables && !hasMessages && (
           <View style={[styles.variablesContainer, { backgroundColor: colors.background }]}>
             <VariableInputList
               variableDefaults={variableDefaults}
               onValuesChange={handleVariablesChange}
               initialValues={variableValues}
-              isExpanded={isVariablesExpanded}
-              onToggleExpanded={handleToggleVariables}
               hasMessages={hasMessages}
             />
           </View>
@@ -151,6 +142,7 @@ export default function AgentConversationScreen() {
           isSending={isStreaming}
           placeholder={placeholderText}
           selectedAgent={agent}
+          hasVariableValues={hasVariables && !hasMessages && hasVariableValues}
         />
       </KeyboardAvoidingView>
     </SafeAreaView>

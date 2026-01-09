@@ -156,10 +156,11 @@ function ToggleInput({ variable, value, onChange, colors, onRequestClose }: Inpu
 
   const handleToggle = (newValue: boolean) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onChange(newValue ? onLabel : offLabel);
-    // Close parent sheet after toggle
+    const newTextValue = newValue ? onLabel : offLabel;
+    onChange(newTextValue);
+    // Close parent sheet after a short delay to show the toggle change
     if (onRequestClose) {
-      setTimeout(() => onRequestClose(), 300);
+      setTimeout(() => onRequestClose(), 500);
     }
   };
 
@@ -565,12 +566,20 @@ function NumberInput({ variable, value, onChange, colors, onRequestClose }: Inpu
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const newValue = adjustNumberValue(value, step, 'up', min, max);
     onChange(newValue);
+    // Close parent sheet after increment
+    if (onRequestClose) {
+      setTimeout(() => onRequestClose(), 500);
+    }
   };
 
   const handleDecrement = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const newValue = adjustNumberValue(value, step, 'down', min, max);
     onChange(newValue);
+    // Close parent sheet after decrement
+    if (onRequestClose) {
+      setTimeout(() => onRequestClose(), 500);
+    }
   };
 
   return (
