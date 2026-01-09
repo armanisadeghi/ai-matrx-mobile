@@ -63,6 +63,23 @@ export const AgentBottomSheet = React.memo(function AgentBottomSheet({
     };
   }, [filteredAgents, defaultAgents]);
 
+  // Create list data with section headers
+  const listData = useMemo(() => {
+    const data: Array<{ type: 'header' | 'agent'; agent?: AgentOption; title?: string }> = [];
+    
+    if (filteredDefault.length > 0) {
+      data.push({ type: 'header', title: 'Default Agents' });
+      filteredDefault.forEach(agent => data.push({ type: 'agent', agent }));
+    }
+    
+    if (filteredCustom.length > 0) {
+      data.push({ type: 'header', title: 'Your Custom Agents' });
+      filteredCustom.forEach(agent => data.push({ type: 'agent', agent }));
+    }
+    
+    return data;
+  }, [filteredDefault, filteredCustom]);
+
   const handleSelectAgent = useCallback(
     (agent: AgentOption) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -72,12 +89,20 @@ export const AgentBottomSheet = React.memo(function AgentBottomSheet({
     [onSelect]
   );
 
-  const renderAgent = useCallback(
-    (agent: AgentOption) => {
+  const renderItem = useCallback(
+    ({ item }: { item: typeof listData[0] }) => {
+      if (item.type === 'header') {
+        return (
+          <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>
+            {item.title}
+          </Text>
+        );
+      }
+
+      const agent = item.agent!;
       const isSelected = agent.id === selectedAgentId;
       return (
         <TouchableOpacity
-          key={agent.id}
           style={[
             styles.agentItem,
             {
@@ -105,6 +130,13 @@ export const AgentBottomSheet = React.memo(function AgentBottomSheet({
       );
     },
     [selectedAgentId, colors, handleSelectAgent]
+  );
+
+  const keyExtractor = useCallback(
+    (item: typeof listData[0], index: number) => {
+      return item.type === 'header' ? `header-${index}` : `agent-${item.agent!.id}`;
+    },
+    []
   );
 
   React.useEffect(() => {
@@ -145,43 +177,19 @@ export const AgentBottomSheet = React.memo(function AgentBottomSheet({
           </View>
         ) : (
           <BottomSheetFlatList
-            data={[]}
-            renderItem={() => null}
-            ListHeaderComponent={
-              <>
-                {/* Default Agents Section */}
-                {filteredDefault.length > 0 && (
-                  <>
-                    <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>
-                      Default Agents
-                    </Text>
-                    {filteredDefault.map(renderAgent)}
-                  </>
-                )}
-
-                {/* Custom Agents Section */}
-                {filteredCustom.length > 0 && (
-                  <>
-                    <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>
-                      Your Custom Agents
-                    </Text>
-                    {filteredCustom.map(renderAgent)}
-                  </>
-                )}
-
-                {/* Empty State */}
-                {filteredAgents.length === 0 && (
-                  <View style={styles.emptyContainer}>
-                    <Ionicons name="search-outline" size={48} color={colors.textTertiary} />
-                    <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                      No agents found
-                    </Text>
-                  </View>
-                )}
-              </>
-            }
+            data={listData}
+            renderItem={renderItem}
+            keyExtractor={keyExtractor}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Ionicons name="search-outline" size={48} color={colors.textTertiary} />
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                  No agents found
+                </Text>
+              </View>
+            }
           />
         )}
       </View>
