@@ -12,4 +12,6 @@ export { MessageActions } from './MessageActions';
 export { MessageList } from './MessageList';
 export { ModeBottomSheet } from './ModeBottomSheet';
 export { TypingIndicator } from './TypingIndicator';
+export { VariableInput } from './VariableInput';
+export { VariableInputList } from './VariableInputList';
 

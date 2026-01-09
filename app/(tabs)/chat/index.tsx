@@ -14,6 +14,7 @@ import { AppStorage, StorageKeys } from '@/lib/storage';
 import { AgentOption } from '@/types/agent';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
   FlatList,
@@ -50,8 +51,7 @@ export default function AgentSelectionScreen() {
     warmAgent({ prompt_id: agent.promptId }).catch(console.warn);
     
     // Navigate to chat conversation screen
-    // TODO: Create the conversation screen route
-    console.log('Selected agent:', agent.id, agent.promptId);
+    router.push(`/(tabs)/chat/${agent.id}` as any);
   };
 
   const getAgentIcon = (agent: AgentOption): keyof typeof Ionicons.glyphMap => {
@@ -89,15 +89,14 @@ export default function AgentSelectionScreen() {
       <Text style={[styles.agentDescription, { color: colors.textSecondary }]}>
         {item.description || 'AI-powered assistant'}
       </Text>
-      {item.variables.length > 0 && (
+      {item.variableDefaults && item.variableDefaults.length > 0 && (
         <View style={styles.capabilities}>
-          {item.variables.map((v) => (
-            <View key={v.name} style={[styles.capabilityTag, { backgroundColor: colors.surface }]}>
-              <Text style={[styles.capabilityText, { color: colors.textTertiary }]}>
-                {v.name}
-              </Text>
-            </View>
-          ))}
+          <View style={[styles.capabilityTag, { backgroundColor: colors.surface }]}>
+            <Ionicons name="options-outline" size={12} color={colors.primary} />
+            <Text style={[styles.capabilityText, { color: colors.textTertiary }]}>
+              {item.variableDefaults.length} {item.variableDefaults.length === 1 ? 'variable' : 'variables'}
+            </Text>
+          </View>
         </View>
       )}
     </Card>
@@ -202,13 +201,15 @@ const styles = StyleSheet.create({
     gap: Layout.spacing.xs,
   },
   capabilityTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: Layout.spacing.sm,
     paddingVertical: Layout.spacing.xs,
     borderRadius: Layout.radius.sm,
+    gap: 4,
   },
   capabilityText: {
     ...Typography.caption2,
-    textTransform: 'capitalize',
   },
   emptyState: {
     alignItems: 'center',

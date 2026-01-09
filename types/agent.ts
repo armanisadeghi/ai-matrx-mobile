@@ -8,7 +8,42 @@
 // ============================================================================
 
 /**
- * Variable definition for agent prompts
+ * Variable component type for custom input components
+ */
+export type VariableComponentType = 
+  | 'textarea'   // Multi-line text input (DEFAULT)
+  | 'toggle'     // Binary on/off switch
+  | 'radio'      // Single selection from options
+  | 'checkbox'   // Multiple selections from options
+  | 'select'     // Dropdown single selection
+  | 'number';    // Number input with +/- controls
+
+/**
+ * Custom component configuration for variable inputs
+ */
+export interface VariableCustomComponent {
+  type: VariableComponentType;
+  options?: string[];              // For select/radio/checkbox types
+  allowOther?: boolean;            // Whether to include "Other" option
+  toggleValues?: [string, string]; // For toggle type: [offLabel, onLabel]
+  min?: number;                    // For number type
+  max?: number;                    // For number type
+  step?: number;                   // For number type
+}
+
+/**
+ * Prompt variable definition (matches web spec)
+ */
+export interface PromptVariable {
+  name: string;                    // Variable identifier (e.g., "topic", "creativity_level")
+  defaultValue: string;            // Default value (can be empty string)
+  required?: boolean;              // Whether the variable is required
+  helpText?: string;               // Placeholder/hint text for the user
+  customComponent?: VariableCustomComponent;
+}
+
+/**
+ * Legacy variable definition (deprecated, use PromptVariable)
  */
 export interface AgentVariable {
   name: string;
@@ -25,7 +60,8 @@ export interface AgentOption {
   name: string;
   description?: string;
   promptId: string;
-  variables: AgentVariable[];
+  variableDefaults?: PromptVariable[];  // Variable definitions following the spec
+  variables?: AgentVariable[];          // Legacy support (deprecated)
   icon?: string;
 }
 
