@@ -88,15 +88,15 @@ export async function warmAgent(request: AgentWarmRequest): Promise<AgentWarmRes
 }
 
 /**
- * Execute an agent with streaming response
+ * Execute an agent with streaming response using XMLHttpRequest
  * Returns an async generator that yields stream events
+ * Uses XMLHttpRequest instead of fetch for React Native streaming compatibility
  */
 export async function* executeAgent(
   request: AgentExecuteRequest,
   signal?: AbortSignal
 ): AsyncGenerator<AgentStreamEvent> {
   let headers: Record<string, string>;
-  let response: Response;
 
   try {
     headers = await getAuthHeaders();
@@ -117,104 +117,156 @@ export async function* executeAgent(
     console.log('[Agent Service] Request payload:', JSON.stringify({...request, stream: true}, null, 2));
   }
 
-  try {
-    response = await fetch(`${API_BASE_URL}/api/agent/execute`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        ...request,
-        stream: true,
-      }),
-      signal,
-    });
-    
-    if (__DEV__) {
-      console.log('[Agent Service] Response status:', response.status, response.statusText);
+  const xhr = new XMLHttpRequest();
+  let lastPosition = 0;
+  let isComplete = false;
+
+  // Create a promise-based queue for events
+  const eventQueue: AgentStreamEvent[] = [];
+  let resolveNext: (() => void) | null = null;
+
+  const pushEvent = (event: AgentStreamEvent) => {
+    eventQueue.push(event);
+    if (resolveNext) {
+      resolveNext();
+      resolveNext = null;
     }
-  } catch (error) {
-    // Network error (e.g., can't reach server)
-    if (__DEV__) {
-      console.error('[Agent Service] Network error:', error);
+  };
+
+  const waitForEvent = () => new Promise<void>(resolve => {
+    if (eventQueue.length > 0) {
+      resolve();
+    } else {
+      resolveNext = resolve;
     }
-    yield {
-      event: 'error',
-      data: {
-        type: 'network_error',
-        message: error instanceof Error ? error.message : 'Network error',
-        user_visible_message: 
-          'Failed to connect to the server. Please check your network connection.\n' +
-          (Platform.OS === 'ios' && API_BASE_URL?.includes('localhost')
-            ? 'Note: iOS Simulator cannot connect to localhost. Use your machine\'s IP address.'
-            : ''),
-      },
-    };
-    return;
-  }
+  });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
+  xhr.onprogress = () => {
+    const newData = xhr.responseText.substring(lastPosition);
+    lastPosition = xhr.responseText.length;
+
+    if (!newData) return;
+
     if (__DEV__) {
-      console.error('[Agent Service] HTTP error response:', error);
-      console.error('[Agent Service] Status:', response.status, response.statusText);
+      console.log('[Agent Service] Received chunk, length:', newData.length);
     }
-    yield {
-      event: 'error',
-      data: {
-        type: 'http_error',
-        message: error.detail || `HTTP ${response.status}`,
-        user_visible_message: 'Failed to connect to the AI service. Please try again.',
-        code: String(response.status),
-      },
-    };
-    return;
-  }
 
-  const reader = response.body?.getReader();
-  if (!reader) {
-    yield {
-      event: 'error',
-      data: {
-        type: 'stream_error',
-        message: 'No response body',
-        user_visible_message: 'Failed to receive response. Please try again.',
-      },
-    };
-    return;
-  }
-
-  const decoder = new TextDecoder();
-  let buffer = '';
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (trimmed) {
-          try {
-            const event = JSON.parse(trimmed) as AgentStreamEvent;
-            yield event;
-          } catch {
-            // Skip malformed JSON lines
-            console.warn('Failed to parse stream line:', trimmed);
+    const lines = newData.split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed) {
+        try {
+          const event = JSON.parse(trimmed) as AgentStreamEvent;
+          if (__DEV__) {
+            console.log('[Agent Service] Parsed event:', event.event);
+          }
+          pushEvent(event);
+        } catch (parseError) {
+          console.warn('[Agent Service] Failed to parse stream line:', trimmed.substring(0, 100));
+          if (__DEV__) {
+            console.warn('[Agent Service] Parse error:', parseError);
           }
         }
       }
     }
+  };
 
-    // Process any remaining buffer
-    if (buffer.trim()) {
+  xhr.onload = () => {
+    if (__DEV__) {
+      console.log('[Agent Service] Stream completed, status:', xhr.status);
+    }
+
+    if (xhr.status !== 200) {
       try {
-        const event = JSON.parse(buffer.trim()) as AgentStreamEvent;
-        yield event;
+        const error = JSON.parse(xhr.responseText);
+        pushEvent({
+          event: 'error',
+          data: {
+            type: 'http_error',
+            message: error.detail || `HTTP ${xhr.status}`,
+            user_visible_message: 'Failed to connect to the AI service. Please try again.',
+            code: String(xhr.status),
+          },
+        });
       } catch {
-        console.warn('Failed to parse final buffer:', buffer);
+        pushEvent({
+          event: 'error',
+          data: {
+            type: 'http_error',
+            message: `HTTP ${xhr.status}`,
+            user_visible_message: 'Failed to connect to the AI service. Please try again.',
+            code: String(xhr.status),
+          },
+        });
+      }
+    }
+
+    pushEvent({
+      event: 'end',
+      data: true,
+    });
+    isComplete = true;
+  };
+
+  xhr.onerror = () => {
+    if (__DEV__) {
+      console.error('[Agent Service] XHR network error');
+    }
+    pushEvent({
+      event: 'error',
+      data: {
+        type: 'network_error',
+        message: 'Network error',
+        user_visible_message: 'Failed to connect to the server. Please check your network connection.',
+      },
+    });
+    pushEvent({
+      event: 'end',
+      data: true,
+    });
+    isComplete = true;
+  };
+
+  xhr.onabort = () => {
+    pushEvent({
+      event: 'end',
+      data: true,
+    });
+    isComplete = true;
+  };
+
+  xhr.open('POST', `${API_BASE_URL}/api/agent/execute`);
+
+  // Set headers
+  for (const [key, value] of Object.entries(headers)) {
+    xhr.setRequestHeader(key, value);
+  }
+
+  // Handle abort signal
+  if (signal) {
+    signal.addEventListener('abort', () => {
+      xhr.abort();
+    });
+  }
+
+  // Send the request
+  xhr.send(JSON.stringify({
+    ...request,
+    stream: true,
+  }));
+
+  // Yield events as they arrive
+  try {
+    while (!isComplete) {
+      await waitForEvent();
+      
+      while (eventQueue.length > 0) {
+        const event = eventQueue.shift()!;
+        yield event;
+        
+        if (event.event === 'end' || event.event === 'error') {
+          isComplete = true;
+        }
       }
     }
   } catch (error) {
@@ -234,8 +286,6 @@ export async function* executeAgent(
         user_visible_message: 'Connection interrupted. Please try again.',
       },
     };
-  } finally {
-    reader.releaseLock();
   }
 }
 
@@ -286,4 +336,3 @@ export function buildContentArray(
 
   return content;
 }
-

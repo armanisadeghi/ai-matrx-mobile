@@ -8,6 +8,7 @@ import { ChatHeader } from '@/components/chat/ChatHeader';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { MessageList } from '@/components/chat/MessageList';
 import { ModeBottomSheet } from '@/components/chat/ModeBottomSheet';
+import { VariableInputList } from '@/components/chat/VariableInputList';
 import { DEFAULT_AGENTS } from '@/constants/agents';
 import { Colors } from '@/constants/colors';
 import { useAgentChat } from '@/hooks/use-agent-chat';
@@ -46,6 +47,8 @@ export default function ChatScreen() {
   const [showAgentSheet, setShowAgentSheet] = useState(false);
   const [showModeSheet, setShowModeSheet] = useState(false);
   const [conversationTitle, setConversationTitle] = useState('New Chat');
+  const [variableValues, setVariableValues] = useState<Record<string, string>>({});
+  const [showVariables, setShowVariables] = useState(true);
 
   // Update title when messages change
   useEffect(() => {
@@ -80,15 +83,22 @@ export default function ChatScreen() {
 
   const handleSend = useCallback(
     (text: string) => {
-      sendMessage(text);
+      // Pass variable values when sending message
+      sendMessage(text, {
+        variables: variableValues,
+      });
     },
-    [sendMessage]
+    [sendMessage, variableValues]
   );
 
   const handleAgentSelect = useCallback((agent: AgentOption) => {
     setSelectedAgent(agent);
     setShowAgentSheet(false);
     setAgent(agent);
+    // Reset variable values when agent changes
+    setVariableValues({});
+    // Show variables section if agent has variables
+    setShowVariables(true);
   }, [setAgent]);
 
   const handleModeSelect = useCallback((mode: any) => {
@@ -136,6 +146,18 @@ export default function ChatScreen() {
             isTyping={isStreaming}
             statusMessage={statusMessage}
           />
+
+          {/* Variable inputs - show if agent has variables */}
+          {selectedAgent?.variableDefaults && selectedAgent.variableDefaults.length > 0 && (
+            <VariableInputList
+              variableDefaults={selectedAgent.variableDefaults}
+              onValuesChange={setVariableValues}
+              initialValues={variableValues}
+              isExpanded={showVariables}
+              onToggleExpanded={() => setShowVariables(!showVariables)}
+              hasMessages={messages.length > 0}
+            />
+          )}
 
           <ChatInput
             onSend={handleSend}

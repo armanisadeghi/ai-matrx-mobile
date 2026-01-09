@@ -155,77 +155,96 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
         let accumulatedContent = '';
 
         for await (const event of stream) {
-          switch (event.event) {
-            case 'chunk':
-              accumulatedContent += event.data;
-              setState((prev) => ({
-                ...prev,
-                messages: prev.messages.map((msg) =>
-                  msg.id === assistantMessage.id
-                    ? { ...msg, content: accumulatedContent }
-                    : msg
-                ),
-              }));
-              break;
+          if (__DEV__) {
+            console.log('[useAgentChat] Received event:', event.event, event.data);
+          }
 
-            case 'status_update':
-              setState((prev) => ({
-                ...prev,
-                statusMessage: event.data.user_visible_message || event.data.status || null,
-              }));
-              break;
-
-            case 'tool_update':
-              if (event.data.user_visible_message) {
+          try {
+            switch (event.event) {
+              case 'chunk':
+                accumulatedContent += event.data;
                 setState((prev) => ({
                   ...prev,
-                  statusMessage: event.data.user_visible_message || null,
+                  messages: prev.messages.map((msg) =>
+                    msg.id === assistantMessage.id
+                      ? { ...msg, content: accumulatedContent }
+                      : msg
+                  ),
                 }));
-              }
-              break;
+                break;
 
-            case 'data':
-              // Final data event with complete status
-              setState((prev) => ({
-                ...prev,
-                messages: prev.messages.map((msg) =>
-                  msg.id === assistantMessage.id
-                    ? {
-                        ...msg,
-                        content: event.data.output || accumulatedContent,
-                        status: 'complete' as const,
-                        usage: event.data.usage,
-                      }
-                    : msg
-                ),
-              }));
-              break;
+              case 'status_update':
+                setState((prev) => ({
+                  ...prev,
+                  statusMessage: event.data.user_visible_message || event.data.status || null,
+                }));
+                break;
 
-            case 'error':
-              setState((prev) => ({
-                ...prev,
-                messages: prev.messages.map((msg) =>
-                  msg.id === assistantMessage.id
-                    ? {
-                        ...msg,
-                        content: event.data.user_visible_message || event.data.message,
-                        status: 'error' as const,
-                      }
-                    : msg
-                ),
-                error: event.data.user_visible_message || event.data.message,
-              }));
-              break;
+              case 'tool_update':
+                if (event.data.user_visible_message) {
+                  setState((prev) => ({
+                    ...prev,
+                    statusMessage: event.data.user_visible_message || null,
+                  }));
+                }
+                break;
 
-            case 'end':
-              // Stream complete
-              break;
+              case 'data':
+                // Final data event with complete status
+                setState((prev) => ({
+                  ...prev,
+                  messages: prev.messages.map((msg) =>
+                    msg.id === assistantMessage.id
+                      ? {
+                          ...msg,
+                          content: event.data.output || accumulatedContent,
+                          status: 'complete' as const,
+                          usage: event.data.usage,
+                        }
+                      : msg
+                  ),
+                }));
+                break;
+
+              case 'error':
+                console.error('[useAgentChat] Received error event:', event.data);
+                setState((prev) => ({
+                  ...prev,
+                  messages: prev.messages.map((msg) =>
+                    msg.id === assistantMessage.id
+                      ? {
+                          ...msg,
+                          content: event.data.user_visible_message || event.data.message,
+                          status: 'error' as const,
+                        }
+                      : msg
+                  ),
+                  error: event.data.user_visible_message || event.data.message,
+                }));
+                break;
+
+              case 'end':
+                // Stream complete - mark message as complete if not already
+                setState((prev) => ({
+                  ...prev,
+                  messages: prev.messages.map((msg) =>
+                    msg.id === assistantMessage.id && msg.status === 'streaming'
+                      ? { ...msg, status: 'complete' as const }
+                      : msg
+                  ),
+                }));
+                break;
+            }
+          } catch (stateError) {
+            console.error('[useAgentChat] Error updating state for event:', event.event, stateError);
+            throw stateError; // Re-throw to be caught by outer catch
           }
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         console.error('[useAgentChat] Error during message send:', errorMessage);
         console.error('[useAgentChat] Error details:', error);
+        console.error('[useAgentChat] Error stack:', error instanceof Error ? error.stack : 'No stack');
         setState((prev) => ({
           ...prev,
           messages: prev.messages.map((msg) =>

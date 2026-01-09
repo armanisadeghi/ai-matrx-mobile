@@ -3,7 +3,7 @@
  * Handles fetching and managing user prompts/agents from Supabase
  */
 
-import { AgentOption, AgentVariable } from '@/types/agent';
+import { AgentOption } from '@/types/agent';
 import { supabase } from './supabase';
 
 /**
@@ -18,31 +18,20 @@ interface PromptRow {
 }
 
 /**
- * Transform variable_defaults from database to AgentVariable format
- */
-function transformVariableDefaults(variableDefaults: any): AgentVariable[] {
-  if (!variableDefaults || !Array.isArray(variableDefaults)) {
-    return [];
-  }
-
-  return variableDefaults.map((v: any) => ({
-    name: v.name || '',
-    type: v.type || 'string',
-    required: v.required || false,
-    default: v.defaultValue,
-  }));
-}
-
-/**
  * Transform database prompt to AgentOption
  */
 function transformPromptToAgent(prompt: PromptRow): AgentOption {
+  // Pass through variable_defaults as-is since it's already in PromptVariable format
+  const variableDefaults = Array.isArray(prompt.variable_defaults) 
+    ? prompt.variable_defaults 
+    : [];
+
   return {
     id: prompt.id,
     name: prompt.name || 'Unnamed Agent',
     description: prompt.description || 'No description',
     promptId: prompt.id,
-    variables: transformVariableDefaults(prompt.variable_defaults),
+    variableDefaults: variableDefaults,
     icon: 'person', // Default icon for custom agents
   };
 }
