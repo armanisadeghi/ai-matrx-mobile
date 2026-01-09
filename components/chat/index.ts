@@ -14,4 +14,6 @@ export { ModeBottomSheet } from './ModeBottomSheet';
 export { TypingIndicator } from './TypingIndicator';
 export { VariableInput } from './VariableInput';
 export { VariableInputList } from './VariableInputList';
+export { VariableNavigationRow } from './VariableNavigationRow';
+export { VariableEditorSheet } from './VariableEditorSheet';
 

@@ -103,7 +103,7 @@ export default function AgentConversationScreen() {
 
   const hasMessages = messages.length > 0;
   const placeholderText = hasVariables && !hasMessages
-    ? 'Enter your message (or just press Enter to use variables only)'
+    ? 'Enter your message (or press send to use variables only)'
     : 'Ask Matrx';
 
   return (
@@ -131,24 +131,9 @@ export default function AgentConversationScreen() {
           statusMessage={statusMessage}
         />
 
-        {/* Welcome state with variables */}
-        {!hasMessages && hasVariables && (
-          <View style={[styles.welcomeContainer, { backgroundColor: colors.background }]}>
-            <View style={styles.welcomeHeader}>
-              <Ionicons name="sparkles" size={32} color={colors.primary} />
-              <Text style={[styles.welcomeTitle, { color: colors.text }]}>
-                Configure Your Request
-              </Text>
-              <Text style={[styles.welcomeSubtitle, { color: colors.textSecondary }]}>
-                Fill in the options below to customize how {agent.name} responds
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {/* Variable inputs */}
+        {/* Variable inputs - Always visible when agent has variables */}
         {hasVariables && (
-          <View style={[styles.variablesContainer, { backgroundColor: colors.surface }]}>
+          <View style={[styles.variablesContainer, { backgroundColor: colors.background }]}>
             <VariableInputList
               variableDefaults={variableDefaults}
               onValuesChange={handleVariablesChange}
@@ -190,31 +175,7 @@ const styles = StyleSheet.create({
     ...Typography.headline,
     textAlign: 'center',
   },
-  welcomeContainer: {
-    padding: Layout.spacing.xl,
-    alignItems: 'center',
-  },
-  welcomeHeader: {
-    alignItems: 'center',
-    gap: Layout.spacing.sm,
-    marginBottom: Layout.spacing.lg,
-  },
-  welcomeTitle: {
-    ...Typography.title3,
-    textAlign: 'center',
-  },
-  welcomeSubtitle: {
-    ...Typography.body,
-    textAlign: 'center',
-    maxWidth: 300,
-  },
   variablesContainer: {
-    borderTopLeftRadius: Layout.radius.xl,
-    borderTopRightRadius: Layout.radius.xl,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 8,
+    // Minimal container - the component handles its own styling
   },
 });

@@ -176,3 +176,59 @@ export function adjustNumberValue(
   
   return final.toFixed(decimals);
 }
+
+/**
+ * Determine if a variable value should show count summary vs full text
+ * Used for navigation row display
+ */
+export function shouldShowCountSummary(variable: PromptVariable, value: string): boolean {
+  const componentType = variable.customComponent?.type || 'textarea';
+  
+  // Checkbox always shows count
+  if (componentType === 'checkbox') {
+    return true;
+  }
+  
+  // For other types, show count if value is very long or multi-line
+  if (value.length > 50 || value.includes('\n')) {
+    return true;
+  }
+  
+  return false;
+}
+
+/**
+ * Get display preview for a variable value in navigation rows
+ * Smart truncation and summary based on content type
+ */
+export function getVariableDisplayValue(variable: PromptVariable, value: string): string {
+  const componentType = variable.customComponent?.type || 'textarea';
+  
+  // Empty value - show help text or placeholder
+  if (!value || !value.trim()) {
+    return variable.helpText || 'Not set';
+  }
+  
+  // Checkbox - show count
+  if (componentType === 'checkbox') {
+    const selected = parseCheckboxValue(value);
+    if (selected.length === 0) return 'None selected';
+    if (selected.length === 1) return selected[0].length > 30 ? `${selected[0].substring(0, 30)}...` : selected[0];
+    return `${selected.length} selected`;
+  }
+  
+  // Toggle - show the current state
+  if (componentType === 'toggle') {
+    return value;
+  }
+  
+  // For all other types (textarea, radio, select, number)
+  // Show first line if multi-line, truncate if too long
+  const firstLine = value.split('\n')[0];
+  
+  if (firstLine.length <= 40) {
+    return firstLine;
+  }
+  
+  return `${firstLine.substring(0, 40)}...`;
+}

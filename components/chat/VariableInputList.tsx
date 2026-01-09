@@ -1,6 +1,6 @@
 /**
  * AI Matrx Mobile - Variable Input List Component
- * Manages and displays all variable inputs for an agent
+ * Displays variables as clean navigation rows with bottom sheet editing
  */
 
 import { Colors } from '@/constants/colors';
@@ -11,15 +11,16 @@ import { formatVariableName, initializeVariableValues } from '@/lib/variable-uti
 import { PromptVariable } from '@/types/agent';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { VariableInput } from './VariableInput';
+import { VariableNavigationRow } from './VariableNavigationRow';
+import { VariableEditorSheet } from './VariableEditorSheet';
 
 interface VariableInputListProps {
   variableDefaults: PromptVariable[];
@@ -46,14 +47,25 @@ export function VariableInputList({
     return initialValues || initializeVariableValues(variableDefaults);
   });
 
+  // Track which variable is being edited
+  const [editingVariable, setEditingVariable] = useState<PromptVariable | null>(null);
+
   // Update parent when values change
   useEffect(() => {
     onValuesChange(values);
   }, [values, onValuesChange]);
 
-  const handleValueChange = (name: string, value: string) => {
+  const handleValueChange = useCallback((name: string, value: string) => {
     setValues((prev) => ({ ...prev, [name]: value }));
-  };
+  }, []);
+
+  const handleOpenEditor = useCallback((variable: PromptVariable) => {
+    setEditingVariable(variable);
+  }, []);
+
+  const handleCloseEditor = useCallback(() => {
+    setEditingVariable(null);
+  }, []);
 
   const handleToggle = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -66,62 +78,80 @@ export function VariableInputList({
   }
 
   return (
-    <View style={styles.container}>
-      {/* Collapsible header - only show after first message */}
-      {hasMessages && onToggleExpanded && (
-        <TouchableOpacity
-          style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}
-          onPress={handleToggle}
-          accessibilityRole="button"
-          accessibilityLabel={isExpanded ? 'Collapse variables' : 'Expand variables'}
-        >
-          <View style={styles.headerContent}>
-            <Ionicons name="options-outline" size={20} color={colors.primary} />
-            <Text style={[styles.headerText, { color: colors.text }]}>
-              Variables ({variableDefaults.length})
-            </Text>
-          </View>
-          <Ionicons
-            name={isExpanded ? 'chevron-up' : 'chevron-down'}
-            size={20}
-            color={colors.textSecondary}
-          />
-        </TouchableOpacity>
-      )}
-
-      {/* Variable inputs */}
-      {isExpanded && (
-        <ScrollView
-          style={[styles.content, { backgroundColor: colors.background }]}
-          contentContainerStyle={styles.contentContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          {variableDefaults.map((variable, index) => (
-            <View key={variable.name} style={styles.variableContainer}>
-              {/* Variable label */}
-              <View style={styles.labelRow}>
-                <Text style={[styles.label, { color: colors.text }]}>
-                  {formatVariableName(variable.name)}
-                  {variable.required && <Text style={[styles.required, { color: colors.error }]}> *</Text>}
-                </Text>
-                {variable.helpText && (
-                  <Text style={[styles.helpText, { color: colors.textSecondary }]}>
-                    {variable.helpText}
-                  </Text>
-                )}
-              </View>
-
-              {/* Variable input */}
-              <VariableInput
-                variable={variable}
-                value={values[variable.name] || ''}
-                onChange={(value) => handleValueChange(variable.name, value)}
-              />
+    <>
+      <View style={styles.container}>
+        {/* Collapsible header - only show after first message */}
+        {hasMessages && onToggleExpanded && (
+          <TouchableOpacity
+            style={[
+              styles.header,
+              {
+                backgroundColor: colors.surface,
+                borderBottomColor: colors.border,
+              },
+            ]}
+            onPress={handleToggle}
+            accessibilityRole="button"
+            accessibilityLabel={isExpanded ? 'Collapse variables' : 'Expand variables'}
+          >
+            <View style={styles.headerContent}>
+              <Ionicons name="options-outline" size={20} color={colors.primary} />
+              <Text style={[styles.headerText, { color: colors.text }]}>
+                Variables ({variableDefaults.length})
+              </Text>
             </View>
-          ))}
-        </ScrollView>
-      )}
-    </View>
+            <Ionicons
+              name={isExpanded ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={colors.textSecondary}
+            />
+          </TouchableOpacity>
+        )}
+
+        {/* Variable navigation rows */}
+        {isExpanded && (
+          <ScrollView
+            style={[styles.content, { backgroundColor: colors.background }]}
+            contentContainerStyle={styles.contentContainer}
+            showsVerticalScrollIndicator={false}
+          >
+            <View
+              style={[
+                styles.rowsContainer,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              {variableDefaults.map((variable, index) => (
+                <VariableNavigationRow
+                  key={variable.name}
+                  variable={variable}
+                  value={values[variable.name] || ''}
+                  onPress={() => handleOpenEditor(variable)}
+                  isFirst={index === 0}
+                  isLast={index === variableDefaults.length - 1}
+                />
+              ))}
+            </View>
+          </ScrollView>
+        )}
+      </View>
+
+      {/* Bottom Sheet Editor */}
+      <VariableEditorSheet
+        variable={editingVariable}
+        value={editingVariable ? values[editingVariable.name] || '' : ''}
+        onChange={(value) => {
+          if (editingVariable) {
+            handleValueChange(editingVariable.name, value);
+          }
+        }}
+        onClose={handleCloseEditor}
+        isOpen={editingVariable !== null}
+      />
+    </>
   );
 }
 
@@ -148,29 +178,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   content: {
-    maxHeight: 400,
+    maxHeight: 500,
   },
   contentContainer: {
-    padding: Layout.spacing.lg,
-    gap: Layout.spacing.lg,
+    padding: Layout.spacing.md,
   },
-  variableContainer: {
-    gap: Layout.spacing.sm,
-  },
-  labelRow: {
-    gap: Layout.spacing.xs,
-  },
-  label: {
-    ...Typography.body,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  required: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  helpText: {
-    ...Typography.caption1,
-    fontSize: 13,
+  rowsContainer: {
+    borderRadius: Layout.radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
   },
 });
