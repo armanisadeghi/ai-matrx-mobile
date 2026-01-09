@@ -17,6 +17,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Mode {
   id: string;
@@ -42,6 +43,7 @@ export const ModeBottomSheet = React.memo(function ModeBottomSheet({
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'dark'];
   const bottomSheetRef = useRef<BottomSheet>(null);
+  const insets = useSafeAreaInsets();
 
   const snapPoints = useMemo(() => ['50%'], []);
 
@@ -147,6 +149,7 @@ export const ModeBottomSheet = React.memo(function ModeBottomSheet({
       snapPoints={snapPoints}
       enablePanDownToClose
       onClose={onClose}
+      topInset={insets.top}
       backgroundStyle={{ backgroundColor: colors.background }}
       handleIndicatorStyle={{ backgroundColor: colors.textTertiary }}
     >

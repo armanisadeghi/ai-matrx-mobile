@@ -14,9 +14,10 @@ import { useAgentChat } from '@/hooks/use-agent-chat';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { generateConversationTitle, saveMessage, updateConversation } from '@/lib/conversations';
 import { AgentOption } from '@/types/agent';
+import { useDrawerStatus } from '@react-navigation/drawer';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -24,6 +25,7 @@ export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'dark'];
+  const drawerStatus = useDrawerStatus();
 
   // Initialize agent chat with first default agent
   const {
@@ -114,6 +116,8 @@ export default function ChatScreen() {
     router.push(`/(drawer)/chat/${newChatId}` as any);
   }, [newConversation]);
 
+  const isDrawerOpen = drawerStatus === 'open';
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView
@@ -125,11 +129,7 @@ export default function ChatScreen() {
           onNewChatPress={handleNewChat}
         />
 
-        <KeyboardAvoidingView
-          style={styles.keyboardView}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-        >
+        <View style={styles.contentView}>
           <MessageList
             messages={messages as any}
             streamingMessageId={isStreaming ? messages[messages.length - 1]?.id : undefined}
@@ -146,7 +146,18 @@ export default function ChatScreen() {
             onAttachFile={handleAttachFile}
             onVoiceRecord={handleVoiceRecord}
           />
-        </KeyboardAvoidingView>
+        </View>
+
+        {/* Dim overlay when drawer is open */}
+        {isDrawerOpen && (
+          <View
+            style={[
+              styles.dimOverlay,
+              { backgroundColor: colors.text },
+            ]}
+            pointerEvents="none"
+          />
+        )}
 
         {/* Agent Selection Bottom Sheet */}
         <AgentBottomSheet
@@ -172,7 +183,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  keyboardView: {
+  contentView: {
     flex: 1,
+  },
+  dimOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.3,
   },
 });

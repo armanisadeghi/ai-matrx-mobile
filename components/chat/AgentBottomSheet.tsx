@@ -20,6 +20,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface AgentBottomSheetProps {
   visible: boolean;
@@ -38,10 +39,11 @@ export const AgentBottomSheet = React.memo(function AgentBottomSheet({
   const colors = Colors[colorScheme ?? 'dark'];
   const bottomSheetRef = useRef<BottomSheet>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const insets = useSafeAreaInsets();
 
   const { agents, defaultAgents, customAgents, isLoading } = useAgents();
 
-  const snapPoints = useMemo(() => ['50%', '90%'], []);
+  const snapPoints = useMemo(() => ['50%', '85%'], []);
 
   // Filter agents by search query
   const filteredAgents = useMemo(() => {
@@ -154,6 +156,7 @@ export const AgentBottomSheet = React.memo(function AgentBottomSheet({
       snapPoints={snapPoints}
       enablePanDownToClose
       onClose={onClose}
+      topInset={insets.top}
       backgroundStyle={{ backgroundColor: colors.background }}
       handleIndicatorStyle={{ backgroundColor: colors.textTertiary }}
     >

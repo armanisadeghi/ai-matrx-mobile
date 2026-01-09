@@ -41,17 +41,15 @@ export const ChatHeader = React.memo(function ChatHeader({
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: colors.surface,
-          borderBottomColor: colors.border,
-        },
-      ]}
-    >
+    <View style={styles.container}>
       <TouchableOpacity
-        style={styles.menuButton}
+        style={[
+          styles.menuButton,
+          {
+            backgroundColor: colors.surface,
+            shadowColor: colors.text,
+          },
+        ]}
         onPress={handleMenuPress}
         accessibilityLabel="Open menu"
         accessibilityRole="button"
@@ -59,16 +57,32 @@ export const ChatHeader = React.memo(function ChatHeader({
         <Ionicons name="menu" size={24} color={colors.text} />
       </TouchableOpacity>
 
-      <Text
-        style={[styles.title, { color: colors.text }]}
-        numberOfLines={1}
-        ellipsizeMode="tail"
+      <View
+        style={[
+          styles.titleContainer,
+          {
+            backgroundColor: colors.surface,
+            shadowColor: colors.text,
+          },
+        ]}
       >
-        {title}
-      </Text>
+        <Text
+          style={[styles.title, { color: colors.text }]}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
+          {title}
+        </Text>
+      </View>
 
       <TouchableOpacity
-        style={styles.newChatButton}
+        style={[
+          styles.newChatButton,
+          {
+            backgroundColor: colors.surface,
+            shadowColor: colors.text,
+          },
+        ]}
         onPress={handleNewChatPress}
         accessibilityLabel="New chat"
         accessibilityRole="button"
@@ -86,37 +100,64 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     height: 56,
     paddingHorizontal: Layout.spacing.md,
-    borderBottomWidth: Platform.OS === 'ios' ? 0.5 : 1,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+    backgroundColor: 'transparent',
   },
   menuButton: {
     width: 44,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 22,
+    ...Platform.select({
+      ios: {
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.12,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  titleContainer: {
+    flex: 1,
+    height: 44,
+    justifyContent: 'center',
+    marginHorizontal: Layout.spacing.sm,
+    borderRadius: 22,
+    paddingHorizontal: Layout.spacing.lg,
+    ...Platform.select({
+      ios: {
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.12,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   title: {
     ...Typography.headline,
     fontSize: 18,
     fontWeight: '600',
-    flex: 1,
     textAlign: 'center',
-    marginHorizontal: Layout.spacing.md,
   },
   newChatButton: {
     width: 44,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 22,
+    ...Platform.select({
+      ios: {
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.12,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
 });

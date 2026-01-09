@@ -52,7 +52,7 @@ export function ChatInput({
   const inputRef = useRef<TextInput>(null);
   
   const [message, setMessage] = useState('');
-  const [inputHeight, setInputHeight] = useState(Layout.chat.inputMinHeight);
+  const [inputHeight, setInputHeight] = useState(20); // Start with single line (lineHeight)
 
   const handleSend = () => {
     if (!message.trim() || isSending) return;
@@ -60,7 +60,7 @@ export function ChatInput({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onSend(message.trim());
     setMessage('');
-    setInputHeight(Layout.chat.inputMinHeight);
+    setInputHeight(20); // Reset to single line height
   };
 
   const handleAttachFile = () => {
@@ -85,10 +85,12 @@ export function ChatInput({
 
   const handleContentSizeChange = (event: { nativeEvent: { contentSize: { height: number } } }) => {
     const { height } = event.nativeEvent.contentSize;
-    const newHeight = Math.min(
-      Math.max(height, Layout.chat.inputMinHeight),
-      Layout.chat.inputMaxHeight
-    );
+    const lineHeight = 20;
+    const maxRows = 8;
+    const maxHeight = lineHeight * maxRows; // 160px for 8 lines of text
+    
+    // Let the input grow naturally based on content
+    const newHeight = Math.max(Math.min(height, maxHeight), lineHeight);
     setInputHeight(newHeight);
   };
 
@@ -96,34 +98,32 @@ export function ChatInput({
   const insets = useSafeAreaInsets();
 
   return (
-    <KeyboardStickyView offset={{ closed: 0, opened: insets.bottom }}>
+    <KeyboardStickyView offset={{ closed: 0, opened: 0 }}>
       <BlurView intensity={80} tint={colorScheme ?? 'dark'} style={styles.blurContainer}>
         <View style={[
           styles.container, 
           { 
+            backgroundColor: colors.surface,
             borderTopColor: colors.border,
-            paddingBottom: Math.max(insets.bottom, Platform.OS === 'ios' ? 8 : 16)
+            paddingBottom: insets.bottom || (Platform.OS === 'ios' ? 8 : 16)
           }
         ]}>
-          {/* Input placeholder with icon */}
+          {/* Input text area */}
           <View style={styles.inputRow}>
-            <View style={styles.placeholderRow}>
-              <Ionicons name="shield-checkmark" size={20} color={colors.textSecondary} />
-              <TextInput
-                ref={inputRef}
-                style={[styles.input, { color: colors.text, height: inputHeight }]}
-                value={message}
-                onChangeText={setMessage}
-                placeholder={placeholder}
-                placeholderTextColor={colors.textTertiary}
-                multiline
-                maxLength={4000}
-                onContentSizeChange={handleContentSizeChange}
-                returnKeyType="default"
-                blurOnSubmit={false}
-                editable={!isSending}
-              />
-            </View>
+            <TextInput
+              ref={inputRef}
+              style={[styles.input, { color: colors.text, height: inputHeight }]}
+              value={message}
+              onChangeText={setMessage}
+              placeholder={placeholder}
+              placeholderTextColor={colors.textTertiary}
+              multiline
+              maxLength={4000}
+              onContentSizeChange={handleContentSizeChange}
+              returnKeyType="default"
+              blurOnSubmit={false}
+              editable={!isSending}
+            />
           </View>
 
           {/* Action buttons row */}
@@ -156,7 +156,13 @@ export function ChatInput({
               accessibilityRole="button"
             >
               <Ionicons name="flash" size={16} color={colors.textSecondary} style={{ marginRight: 4 }} />
-              <Text style={[styles.agentText, { color: colors.text }]}>{selectedAgent?.name || 'Select Agent'}</Text>
+              <Text 
+                style={[styles.agentText, { color: colors.text }]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {selectedAgent?.name || 'Select Agent'}
+              </Text>
             </TouchableOpacity>
 
             {/* Spacer */}
@@ -182,22 +188,30 @@ export function ChatInput({
               <Ionicons name="videocam-outline" size={24} color={colors.textTertiary} />
             </TouchableOpacity>
 
-            {/* Send button */}
-            {message.trim().length > 0 && (
-              <TouchableOpacity
-                style={[styles.sendButton, { backgroundColor: colors.primary }]}
-                onPress={handleSend}
-                disabled={!canSend}
-                accessibilityLabel="Send message"
-                accessibilityRole="button"
-              >
-                {isSending ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Ionicons name="arrow-up" size={20} color="#FFFFFF" />
-                )}
-              </TouchableOpacity>
-            )}
+            {/* Send button - always visible */}
+            <TouchableOpacity
+              style={[
+                styles.sendButton, 
+                { 
+                  backgroundColor: canSend ? colors.primary : colors.surface,
+                  opacity: canSend ? 1 : 0.4
+                }
+              ]}
+              onPress={handleSend}
+              disabled={!canSend}
+              accessibilityLabel="Send message"
+              accessibilityRole="button"
+            >
+              {isSending ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Ionicons 
+                  name="arrow-up" 
+                  size={20} 
+                  color={canSend ? "#FFFFFF" : colors.textTertiary} 
+                />
+              )}
+            </TouchableOpacity>
           </View>
         </View>
       </BlurView>
@@ -208,43 +222,43 @@ export function ChatInput({
 const styles = StyleSheet.create({
   blurContainer: {
     width: '100%',
+    borderTopLeftRadius: Layout.radius.xl,
+    borderTopRightRadius: Layout.radius.xl,
+    overflow: 'hidden',
   },
   container: {
     paddingTop: Layout.spacing.md,
-    paddingHorizontal: Layout.spacing.lg,
+    paddingHorizontal: Layout.spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopLeftRadius: Layout.radius.xl,
+    borderTopRightRadius: Layout.radius.xl,
   },
   inputRow: {
     marginBottom: Layout.spacing.sm,
   },
-  placeholderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Layout.spacing.sm,
-    paddingHorizontal: Layout.spacing.sm,
-  },
   input: {
     ...Typography.body,
     fontSize: 16, // Prevent iOS zoom
-    lineHeight: 22,
-    flex: 1,
-    maxHeight: Layout.chat.inputMaxHeight,
-    paddingTop: Platform.OS === 'ios' ? 8 : 4,
-    paddingBottom: Platform.OS === 'ios' ? 8 : 4,
+    lineHeight: 20,
+    paddingVertical: Platform.OS === 'ios' ? 8 : 6,
+    paddingHorizontal: Layout.spacing.md,
     borderWidth: 0,
     outlineWidth: 0,
+    textAlignVertical: 'top',
   },
   actionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Layout.spacing.xs,
     paddingTop: Layout.spacing.xs,
+    paddingRight: Layout.spacing.xs,
   },
   actionButton: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 20,
+    borderRadius: 18,
   },
   agentButton: {
     flexDirection: 'row',
@@ -253,20 +267,24 @@ const styles = StyleSheet.create({
     paddingVertical: Layout.spacing.xs,
     borderRadius: Layout.radius.xl,
     height: 36,
+    maxWidth: 140, // Prevent agent name from pushing send button off screen
   },
   agentText: {
     ...Typography.body,
     fontSize: 14,
     fontWeight: '500',
+    flex: 1,
   },
   spacer: {
     flex: 1,
   },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
+    // Ensure icon is properly centered and not cut off
+    overflow: 'visible',
   },
 });
