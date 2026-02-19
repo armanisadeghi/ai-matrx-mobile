@@ -9,7 +9,7 @@ import { Colors } from '@/constants/colors';
 import { Layout } from '@/constants/layout';
 import { Typography } from '@/constants/typography';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { warmAgent } from '@/lib/agent-service';
+import { warmAgent } from '@/lib/api/agent';
 import { AppStorage, StorageKeys } from '@/lib/storage';
 import { AgentOption } from '@/types/agent';
 import { Ionicons } from '@expo/vector-icons';

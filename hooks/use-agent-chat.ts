@@ -8,7 +8,7 @@ import {
   executeAgent,
   generateConversationId,
   warmAgent,
-} from '@/lib/agent-service';
+} from '@/lib/api/agent';
 import {
   AgentConfigOverrides,
   AgentOption,
