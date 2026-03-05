@@ -88,6 +88,19 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="local"
+        options={{
+          title: 'Local PC',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'desktop' : 'desktop-outline'}
+              size={24}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',
