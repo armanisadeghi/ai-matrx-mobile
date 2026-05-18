@@ -50,3 +50,7 @@ app-example
 
 # EAS
 .eas/
+
+# macOS Finder metadata
+.DS_Store
+**/.DS_Store
