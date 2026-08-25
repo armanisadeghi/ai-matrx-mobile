@@ -13,9 +13,10 @@ import { Typography } from '@/constants/typography';
 import { useAgentChat } from '@/hooks/use-agent-chat';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { buildUserInputWithVariables, initializeVariableValues } from '@/lib/variable-utils';
+import type { AgentOption } from '@/types/agent';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
     KeyboardAvoidingView,
     Platform,
@@ -29,10 +30,8 @@ export default function AgentConversationScreen() {
   const { agentId } = useLocalSearchParams<{ agentId: string }>();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'dark'];
-
-  // Get agent configuration
   const agent = getAgentById(agentId || '');
-  
+
   if (!agent) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -52,7 +51,14 @@ export default function AgentConversationScreen() {
     );
   }
 
-  const variableDefaults = agent.variableDefaults || [];
+  return <ActiveAgentConversation agent={agent} />;
+}
+
+function ActiveAgentConversation({ agent }: { agent: AgentOption }) {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'dark'];
+
+  const variableDefaults = useMemo(() => agent.variableDefaults || [], [agent.variableDefaults]);
   const hasVariables = variableDefaults.length > 0;
 
   // Initialize chat hook

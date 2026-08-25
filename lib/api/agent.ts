@@ -9,6 +9,10 @@ import {
   AgentWarmRequest,
   AgentWarmResponse,
 } from '@/types/agent';
+import {
+  createMatrxNdjsonFramer,
+  type MatrxStreamEnvelope,
+} from '@ai-matrx/agents/stream/ndjson';
 import { Platform } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { getAccessToken } from '../supabase';
@@ -141,6 +145,47 @@ export async function* executeAgent(
     }
   });
 
+  const toAgentStreamEvent = (envelope: MatrxStreamEnvelope): AgentStreamEvent => {
+    if (envelope.event === 'chunk') {
+      const text =
+        typeof envelope.data === 'string'
+          ? envelope.data
+          : envelope.data !== null &&
+              typeof envelope.data === 'object' &&
+              !Array.isArray(envelope.data) &&
+              typeof (envelope.data as Record<string, unknown>).text === 'string'
+            ? ((envelope.data as Record<string, unknown>).text as string)
+            : '';
+      return { event: 'chunk', data: text };
+    }
+    return envelope as unknown as AgentStreamEvent;
+  };
+
+  const pushEnvelopes = (envelopes: MatrxStreamEnvelope[]) => {
+    for (const envelope of envelopes) {
+      if (__DEV__) {
+        console.log('[Agent Service] Parsed event:', envelope.event);
+      }
+      pushEvent(toAgentStreamEvent(envelope));
+    }
+  };
+
+  // XHR progress callbacks can split a JSON token or a UTF-8 code point at
+  // any position. The package framer owns that carry-over buffer and only
+  // emits complete normalized envelopes; no partial transcript is discarded.
+  const framer = createMatrxNdjsonFramer({
+    onMalformedLine: ({ line, error, lineNumber }) => {
+      console.warn(
+        `[Agent Service] Failed to parse stream line #${lineNumber}:`,
+        line.substring(0, 100),
+      );
+      if (__DEV__) console.warn('[Agent Service] Parse error:', error);
+    },
+    onUnknownEnvelope: (value) => {
+      console.warn('[Agent Service] Unknown stream envelope:', value);
+    },
+  });
+
   xhr.onprogress = () => {
     const newData = xhr.responseText.substring(lastPosition);
     lastPosition = xhr.responseText.length;
@@ -151,24 +196,7 @@ export async function* executeAgent(
       console.log('[Agent Service] Received chunk, length:', newData.length);
     }
 
-    const lines = newData.split('\n');
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed) {
-        try {
-          const event = JSON.parse(trimmed) as AgentStreamEvent;
-          if (__DEV__) {
-            console.log('[Agent Service] Parsed event:', event.event);
-          }
-          pushEvent(event);
-        } catch (parseError) {
-          console.warn('[Agent Service] Failed to parse stream line:', trimmed.substring(0, 100));
-          if (__DEV__) {
-            console.warn('[Agent Service] Parse error:', parseError);
-          }
-        }
-      }
-    }
+    pushEnvelopes(framer.pushText(newData));
   };
 
   xhr.onload = () => {
@@ -176,7 +204,10 @@ export async function* executeAgent(
       console.log('[Agent Service] Stream completed, status:', xhr.status);
     }
 
-    if (xhr.status !== 200) {
+    if (xhr.status === 200) {
+      // Flush a final valid envelope even when the server omits its newline.
+      pushEnvelopes(framer.finish());
+    } else {
       try {
         const error = JSON.parse(xhr.responseText);
         pushEvent({

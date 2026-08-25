@@ -48,7 +48,6 @@ export default function ChatScreen() {
   const [showModeSheet, setShowModeSheet] = useState(false);
   const [conversationTitle, setConversationTitle] = useState('New Chat');
   const [variableValues, setVariableValues] = useState<Record<string, string>>({});
-  const [showVariables, setShowVariables] = useState(true);
 
   // Update title when messages change
   useEffect(() => {
@@ -97,8 +96,6 @@ export default function ChatScreen() {
     setAgent(agent);
     // Reset variable values when agent changes
     setVariableValues({});
-    // Show variables section if agent has variables
-    setShowVariables(true);
   }, [setAgent]);
 
   const handleModeSelect = useCallback((mode: any) => {
@@ -153,8 +150,6 @@ export default function ChatScreen() {
               variableDefaults={selectedAgent.variableDefaults}
               onValuesChange={setVariableValues}
               initialValues={variableValues}
-              isExpanded={showVariables}
-              onToggleExpanded={() => setShowVariables(!showVariables)}
               hasMessages={messages.length > 0}
             />
           )}

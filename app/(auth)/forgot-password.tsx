@@ -68,7 +68,7 @@ export default function ForgotPasswordScreen() {
             Check your email
           </Text>
           <Text style={[styles.successText, { color: colors.textSecondary }]}>
-            We've sent a password reset link to {email}. Please check your inbox.
+            We&apos;ve sent a password reset link to {email}. Please check your inbox.
           </Text>
           <Button
             title="Back to Sign In"
@@ -103,7 +103,7 @@ export default function ForgotPasswordScreen() {
               Reset Password
             </Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              Enter your email address and we'll send you a link to reset your password.
+              Enter your email address and we&apos;ll send you a link to reset your password.
             </Text>
           </View>
 

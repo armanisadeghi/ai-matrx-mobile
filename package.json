@@ -9,10 +9,12 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
+    "test:agent-stream": "node --test tests/agent-stream.test.mjs",
     "env:pull": "doppler secrets download --project ai-matrx-mobile --config dev --no-file --format env > .env",
     "env:push": "doppler secrets upload --project ai-matrx-mobile --config dev .env"
   },
   "dependencies": {
+    "@ai-matrx/agents": "0.3.0",
     "@expo/vector-icons": "^15.0.3",
     "@gorhom/bottom-sheet": "^5.2.8",
     "@react-native-async-storage/async-storage": "2.2.0",

@@ -91,7 +91,7 @@ export default function RegisterScreen() {
             Check your email
           </Text>
           <Text style={[styles.successText, { color: colors.textSecondary }]}>
-            We've sent a confirmation link to {email}. Please check your inbox and confirm your email to continue.
+            We&apos;ve sent a confirmation link to {email}. Please check your inbox and confirm your email to continue.
           </Text>
           <Button
             title="Back to Sign In"
