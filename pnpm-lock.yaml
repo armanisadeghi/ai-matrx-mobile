@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@ai-matrx/agents':
-        specifier: 0.3.0
-        version: 0.3.0
+        specifier: 0.5.0
+        version: 0.5.0
       '@expo/vector-icons':
         specifier: ^15.0.3
         version: 15.0.3(expo-font@14.0.10(expo@54.0.31)(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
@@ -197,8 +197,8 @@ packages:
       graphql:
         optional: true
 
-  '@ai-matrx/agents@0.3.0':
-    resolution: {integrity: sha512-lxJ1xmL148Wkj2xZFXY8vsYIISVlt7IhauWttP3tVgETqroQh1JXQXwp6XxZ3UH+NBB7CLgyuALHSkHD+6EbYw==}
+  '@ai-matrx/agents@0.5.0':
+    resolution: {integrity: sha512-vZmhIMGgVGzFwQA1YafFjdsZ8fWQlsPFKc357iiKFmu23WsMbR/kqqOTlE8mFlpBfX53HfWQ/xePx+d/+LsVFA==}
     engines: {node: '>=20'}
 
   '@babel/code-frame@7.10.4':
@@ -4607,7 +4607,7 @@ snapshots:
 
   '@0no-co/graphql.web@1.2.0': {}
 
-  '@ai-matrx/agents@0.3.0': {}
+  '@ai-matrx/agents@0.5.0': {}
 
   '@babel/code-frame@7.10.4':
     dependencies:
