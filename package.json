@@ -3,6 +3,7 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
+    "prelint": "pnpm check:matrx-packages",
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
@@ -10,11 +11,14 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test:agent-stream": "node --test tests/agent-stream.test.mjs",
+    "check:matrx-packages": "node scripts/check-matrx-packages.mjs",
+    "check:matrx-latest": "node scripts/check-matrx-packages.mjs",
+    "sync:matrx-packages": "pnpm update \"@ai-matrx/*\" && pnpm check:matrx-packages",
     "env:pull": "doppler secrets download --project ai-matrx-mobile --config dev --no-file --format env > .env",
     "env:push": "doppler secrets upload --project ai-matrx-mobile --config dev .env"
   },
   "dependencies": {
-    "@ai-matrx/agents": "0.5.0",
+    "@ai-matrx/agents": "latest",
     "@expo/vector-icons": "^15.0.3",
     "@gorhom/bottom-sheet": "^5.2.8",
     "@react-native-async-storage/async-storage": "2.2.0",
@@ -23,7 +27,7 @@
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
     "@shopify/flash-list": "^2.2.0",
-    "@supabase/supabase-js": "^2.90.0",
+    "@supabase/supabase-js": "^2.112.4",
     "expo": "~54.0.31",
     "expo-auth-session": "~7.0.10",
     "expo-av": "~16.0.8",
