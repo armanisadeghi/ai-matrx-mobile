@@ -9,16 +9,17 @@ import { ChatInput } from '@/components/chat/ChatInput';
 import { MessageList } from '@/components/chat/MessageList';
 import { ModeBottomSheet } from '@/components/chat/ModeBottomSheet';
 import { VariableInputList } from '@/components/chat/VariableInputList';
-import { DEFAULT_AGENTS } from '@/constants/agents';
 import { Colors } from '@/constants/colors';
 import { useAgentChat } from '@/hooks/use-agent-chat';
+import { useDefaultAgent } from '@/hooks/use-default-agent';
+import { fetchAgentOption } from '@/lib/agents';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { generateConversationTitle, saveMessage, updateConversation } from '@/lib/conversations';
 import { AgentOption } from '@/types/agent';
 import { useDrawerStatus } from '@react-navigation/drawer';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -38,16 +39,26 @@ export default function ChatScreen() {
     sendMessage,
     setAgent,
     newConversation,
-  } = useAgentChat({
-    initialAgent: DEFAULT_AGENTS[0],
-  });
+  } = useAgentChat();
 
-  const [selectedAgent, setSelectedAgent] = useState<AgentOption>(DEFAULT_AGENTS[0]);
+  // The default agent is whichever agent HOLDS the mandate, resolved live by
+  // the server — never a constant in this app.
+  const { agent: defaultAgent, error: defaultAgentError } = useDefaultAgent();
+  const [selectedAgent, setSelectedAgent] = useState<AgentOption | null>(null);
+  const [agentError, setAgentError] = useState<string | null>(null);
   const [selectedMode, setSelectedMode] = useState({ id: 'chat', name: 'Chat' });
   const [showAgentSheet, setShowAgentSheet] = useState(false);
   const [showModeSheet, setShowModeSheet] = useState(false);
   const [conversationTitle, setConversationTitle] = useState('New Chat');
   const [variableValues, setVariableValues] = useState<Record<string, string>>({});
+
+  // Adopt the mandate's agent as the opening agent, once it resolves.
+  useEffect(() => {
+    if (defaultAgent && !selectedAgent) {
+      setSelectedAgent(defaultAgent);
+      setAgent(defaultAgent);
+    }
+  }, [defaultAgent, selectedAgent, setAgent]);
 
   // Update title when messages change
   useEffect(() => {
@@ -90,13 +101,31 @@ export default function ChatScreen() {
     [sendMessage, variableValues]
   );
 
-  const handleAgentSelect = useCallback((agent: AgentOption) => {
-    setSelectedAgent(agent);
-    setShowAgentSheet(false);
-    setAgent(agent);
-    // Reset variable values when agent changes
-    setVariableValues({});
-  }, [setAgent]);
+  // The picker's contract is `onSelect(agentId)` and nothing else; this screen
+  // reads the chosen agent's variable definitions for its own inputs.
+  const handleAgentSelect = useCallback(
+    (agentId: string) => {
+      setShowAgentSheet(false);
+      void fetchAgentOption(agentId)
+        .then((agent) => {
+          if (!agent) {
+            setAgentError(
+              'That agent could not be opened: this account cannot read it.',
+            );
+            return;
+          }
+          setAgentError(null);
+          setSelectedAgent(agent);
+          setAgent(agent);
+          // Reset variable values when agent changes
+          setVariableValues({});
+        })
+        .catch((err: unknown) => {
+          setAgentError(err instanceof Error ? err.message : String(err));
+        });
+    },
+    [setAgent],
+  );
 
   const handleModeSelect = useCallback((mode: any) => {
     setSelectedMode(mode);
@@ -154,10 +183,16 @@ export default function ChatScreen() {
             />
           )}
 
+          {(agentError || defaultAgentError) && (
+            <Text style={[styles.agentError, { color: colors.error }]}>
+              {agentError ?? defaultAgentError}
+            </Text>
+          )}
+
           <ChatInput
             onSend={handleSend}
             isSending={isStreaming}
-            selectedAgent={selectedAgent}
+            selectedAgent={selectedAgent ?? undefined}
             onAgentSelect={() => setShowAgentSheet(true)}
             onModeSelect={() => setShowModeSheet(true)}
             onAttachFile={handleAttachFile}
@@ -179,7 +214,7 @@ export default function ChatScreen() {
         {/* Agent Selection Bottom Sheet */}
         <AgentBottomSheet
           visible={showAgentSheet}
-          selectedAgentId={selectedAgent.id}
+          selectedAgentId={selectedAgent?.id}
           onSelect={handleAgentSelect}
           onClose={() => setShowAgentSheet(false)}
         />
@@ -202,6 +237,11 @@ const styles = StyleSheet.create({
   },
   contentView: {
     flex: 1,
+  },
+  agentError: {
+    fontSize: 13,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   dimOverlay: {
     position: 'absolute',

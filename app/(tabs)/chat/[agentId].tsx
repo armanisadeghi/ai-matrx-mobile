@@ -6,7 +6,7 @@
 import { ChatInput } from '@/components/chat/ChatInput';
 import { MessageList } from '@/components/chat/MessageList';
 import { VariableInputList } from '@/components/chat/VariableInputList';
-import { getAgentById } from '@/constants/agents';
+import { fetchAgentOption } from '@/lib/agents';
 import { Colors } from '@/constants/colors';
 import { Layout } from '@/constants/layout';
 import { Typography } from '@/constants/typography';
@@ -16,8 +16,9 @@ import { buildUserInputWithVariables, initializeVariableValues } from '@/lib/var
 import type { AgentOption } from '@/types/agent';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+    ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
     StyleSheet,
@@ -30,7 +31,59 @@ export default function AgentConversationScreen() {
   const { agentId } = useLocalSearchParams<{ agentId: string }>();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'dark'];
-  const agent = getAgentById(agentId || '');
+  // The agent is read from the platform's own catalogue by id — this app no
+  // longer carries a hardcoded list to look it up in.
+  const [agent, setAgent] = useState<AgentOption | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!agentId) {
+      setError('No agent was named in this link.');
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    fetchAgentOption(agentId)
+      .then((resolved) => {
+        if (cancelled) return;
+        if (!resolved) {
+          setError('That agent could not be opened: this account cannot read it.');
+          return;
+        }
+        setAgent(resolved);
+        setError(null);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : String(err));
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [agentId]);
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            title: 'Loading agent',
+            headerStyle: { backgroundColor: colors.surface },
+            headerTintColor: colors.text,
+          }}
+        />
+        <View style={styles.errorContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!agent) {
     return (
@@ -45,7 +98,9 @@ export default function AgentConversationScreen() {
         />
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
-          <Text style={[styles.errorText, { color: colors.text }]}>Agent not found</Text>
+          <Text style={[styles.errorText, { color: colors.text }]}>
+            {error ?? 'Agent not found'}
+          </Text>
         </View>
       </SafeAreaView>
     );

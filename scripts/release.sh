@@ -218,6 +218,20 @@ if $DRY_RUN; then
     exit 0
 fi
 
+# ── Release gates — BLOCKING ─────────────────────────────────────────────────
+#
+# THE ONE AGENT PICKER. This app shipped two hand-rolled agent lists over four
+# hardcoded constants (three of which named the WRONG agent) plus a read of a
+# `prompts` table that does not exist in the platform database. They were
+# deleted on 2026-09-08 in favour of `@ai-matrx/agents/catalog/native`. This
+# keeps them gone — together with the type gate and THE LATEST LAW check.
+info "Running release gates (typecheck, package specs, the one agent picker)..."
+if pnpm check:release-gates; then
+    ok "release gates pass"
+else
+    fail "Release gates failed (see above). If an alternate agent picker was reintroduced: render AgentListSheet / AgentListInlinePicker from @ai-matrx/agents/catalog/native. A behaviour the package lacks is a PACKAGE change made and released in the same session."
+fi
+
 # ── Update package.json (+ package-lock.json if present) ─────────────────────
 info "Bumping version in $VERSION_FILE..."
 npm version "$NEW_VERSION" --no-git-tag-version --allow-same-version 2>/dev/null

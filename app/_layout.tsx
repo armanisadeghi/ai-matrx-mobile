@@ -14,6 +14,7 @@ import { useEffect } from 'react';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import 'react-native-reanimated';
 
+import { AgentCatalogHost } from '@/components/providers/AgentCatalogHost';
 import { AuthProvider, useAuth } from '@/components/providers/AuthProvider';
 import { NotificationProvider } from '@/components/providers/NotificationProvider';
 import { Colors } from '@/constants/colors';
@@ -103,7 +104,10 @@ export default function RootLayout() {
     <KeyboardProvider>
       <AuthProvider>
         <NotificationProvider>
-          <RootLayoutNav />
+          {/* THERE IS ONE AGENT PICKER — its provider is mounted once, here. */}
+          <AgentCatalogHost>
+            <RootLayoutNav />
+          </AgentCatalogHost>
         </NotificationProvider>
       </AuthProvider>
     </KeyboardProvider>
