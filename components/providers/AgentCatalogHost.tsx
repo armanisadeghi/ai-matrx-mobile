@@ -34,9 +34,14 @@ export function AgentCatalogHost({ children }: { children: React.ReactNode }) {
         textFaint: colors.textTertiary,
         border: colors.border,
         primary: colors.primary,
-        primaryForeground: '#FFFFFF',
+        primaryForeground: colors.primaryForeground,
         primarySoft: colors.primary + '20',
         favorite: colors.warning,
+        // The drift banner must follow the app's theme too — leaving these at
+        // the package's dark defaults printed a dark banner in light mode.
+        driftBackground: colors.warning + '20',
+        driftForeground: colors.warning,
+        driftBorder: colors.warning + '55',
       },
     }),
     [colors],

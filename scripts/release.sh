@@ -240,7 +240,11 @@ ok "$VERSION_FILE → $NEW_VERSION"
 # ── Commit ───────────────────────────────────────────────────────────────────
 info "Committing..."
 git add package.json
-[[ -f package-lock.json ]] && git add package-lock.json
+# ONE package manager, ONE lockfile. `package-lock.json` was deleted on
+# 2026-09-08: it had gone stale (it did not know about react-native-svg while
+# pnpm-lock.yaml did), so the two files disagreed about which @ai-matrx/agents
+# an install would resolve. pnpm is what every script here uses.
+git add pnpm-lock.yaml
 git commit -m "$COMMIT_MSG"
 ok "Committed: '$COMMIT_MSG'"
 

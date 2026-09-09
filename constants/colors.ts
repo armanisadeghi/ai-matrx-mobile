@@ -18,6 +18,8 @@ export const Colors = {
     // Brand
     primary: '#0A84FF',
     primaryPressed: '#0077ED',
+    /** Text/glyphs drawn ON the brand colour. */
+    primaryForeground: '#FFFFFF',
     
     // Semantic
     success: '#34C759',
@@ -58,6 +60,8 @@ export const Colors = {
     // Brand
     primary: '#0A84FF',
     primaryPressed: '#409CFF',
+    /** Text/glyphs drawn ON the brand colour. */
+    primaryForeground: '#FFFFFF',
     
     // Semantic
     success: '#30D158',

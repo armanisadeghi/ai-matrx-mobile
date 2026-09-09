@@ -18,9 +18,13 @@
 
 import { AgentOption, PromptVariable } from '@/types/agent';
 
-import { getAccessToken, supabase } from './supabase';
+import type { DefaultRowState } from '@ai-matrx/agents/catalog';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL!;
+import { getAgentCatalog } from './agent-catalog';
+import { supabase } from './supabase';
+
+/** How long to wait for the server's mandate resolution before saying so. */
+const DEFAULT_ROW_TIMEOUT_MS = 20_000;
 
 interface AgentDefinitionRow {
   id: string;
@@ -66,48 +70,56 @@ export async function fetchAgentOption(
 /**
  * Resolve this app's default chat agent through its MANDATE.
  *
- * 🚨 NO HARDCODED AGENTS. A client never walks the mandate ladder itself and
- * never ships a pinned agent id — it asks the server which agent holds the
- * mandate, then reads that agent's real name and variables. Throws with the
- * reason when the mandate cannot produce a runnable agent; the caller shows
- * that reason rather than a placeholder.
+ * 🚨 NO HARDCODED AGENTS, AND NO SECOND RESOLUTION PATH. The package already
+ * owns the one mandate-resolution door (`GET /mandates/{key}/resolution`,
+ * called through the injected transport, with the org context and API-version
+ * bridging that transport carries) and caches, drift-checks and screams about
+ * the answer. This asks the CATALOG for its resolved default row instead of
+ * re-fetching and re-parsing the same endpoint by hand — one key, one path.
+ *
+ * Throws with the reason when the mandate cannot produce a runnable agent; the
+ * caller shows that reason rather than a placeholder.
  */
 export async function resolveDefaultAgentOption(
   mandateKey: string,
 ): Promise<AgentOption> {
-  const accessToken = await getAccessToken();
-  const response = await fetch(
-    `${API_BASE_URL}/mandates/${encodeURIComponent(mandateKey)}/resolution`,
-    {
-      method: 'GET',
-      headers: {
-        Accept: 'application/json',
-        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-      },
-    },
-  );
-  if (!response.ok) {
-    throw new Error(
-      `The default agent for "${mandateKey}" could not be resolved (HTTP ${response.status}). ` +
-        'Sign in again, or ask an administrator to bind this mandate to an agent.',
-    );
-  }
-  const body = (await response.json()) as {
-    agent_id?: string | null;
-    definition_agent_id?: string | null;
-    holder_type?: string | null;
-  };
-  const holderId = body.definition_agent_id ?? body.agent_id ?? null;
-  if (body.holder_type && body.holder_type !== 'agent') {
-    throw new Error(
-      `The mandate "${mandateKey}" names a ${body.holder_type}, and a chat needs an agent.`,
-    );
-  }
+  const catalog = getAgentCatalog();
+  catalog.ensureDefaultRow(mandateKey);
+
+  const row = await new Promise<DefaultRowState>((resolve, reject) => {
+    const settle = () => {
+      const current = catalog.getDefaultRow(mandateKey);
+      if (!current || current.loading) return false;
+      unsubscribe();
+      clearTimeout(timer);
+      resolve(current);
+      return true;
+    };
+    const unsubscribe = catalog.subscribe(() => {
+      settle();
+    });
+    const timer = setTimeout(() => {
+      unsubscribe();
+      reject(
+        new Error(
+          `The default agent for "${mandateKey}" did not resolve in time. ` +
+            'Check your connection and try again.',
+        ),
+      );
+    }, DEFAULT_ROW_TIMEOUT_MS);
+    // The row may already be resolved from a previous screen.
+    settle();
+  });
+
+  if (row.error) throw new Error(row.error);
+  const holderId = row.resolved?.holderId;
   if (!holderId) {
     throw new Error(
-      `The mandate "${mandateKey}" resolved without naming an agent. Bind it to an agent.`,
+      `The default agent for "${mandateKey}" could not be named. ` +
+        'Ask an administrator to bind this mandate to an agent.',
     );
   }
+
   const agent = await fetchAgentOption(holderId);
   if (!agent) {
     throw new Error(
