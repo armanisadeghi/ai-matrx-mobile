@@ -1,3 +1,5 @@
+> 🚨 **RETIRED — not part of the AI Matrx platform.** Old junk; the new mobile package will be built from scratch and has not started. Do not build, adopt, or catch up this repo. See [CLAUDE.md](./CLAUDE.md) and common-docs DECISIONS **C32**.
+
 # AI Matrx Mobile
 
 An intelligent mobile assistant built with Expo, React Native, and Supabase.

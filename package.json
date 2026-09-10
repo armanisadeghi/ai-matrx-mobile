@@ -22,7 +22,6 @@
     "env:push": "doppler secrets upload --project ai-matrx-mobile --config dev .env"
   },
   "dependencies": {
-    "@ai-matrx/agents": "latest",
     "@expo/vector-icons": "^15.0.3",
     "@gorhom/bottom-sheet": "^5.2.8",
     "@react-native-async-storage/async-storage": "2.2.0",
