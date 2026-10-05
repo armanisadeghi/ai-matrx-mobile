@@ -17,7 +17,7 @@
     "check:canonical-pickers:self-test": "tsx scripts/check-canonical-pickers.ts --self-test",
     "typecheck": "tsc --noEmit",
     "check:release-gates": "pnpm typecheck && pnpm check:matrx-packages && pnpm check:canonical-pickers:self-test && pnpm check:canonical-pickers",
-    "sync:matrx-packages": "pnpm update \"@ai-matrx/*\" && pnpm check:matrx-packages",
+    "sync:matrx-packages": "node scripts/await-matrx-latest.mjs && pnpm update \"@ai-matrx/*\" && pnpm check:matrx-packages",
     "env:pull": "doppler secrets download --project ai-matrx-mobile --config dev --no-file --format env > .env",
     "env:push": "doppler secrets upload --project ai-matrx-mobile --config dev .env"
   },
